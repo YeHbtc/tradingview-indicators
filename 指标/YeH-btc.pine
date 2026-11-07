@@ -8,12 +8,10 @@ const string INFO_GROUP = "品种与日期"
 
 textVertical = input.string("上", "垂直", options = ["上", "中", "下"], group = TEXT_GROUP, inline = "位置")
 textHorizontal = input.string("右", "水平", options = ["左", "中", "右"], group = TEXT_GROUP, inline = "位置")
-line1 = input.string("", "第一行", group = TEXT_GROUP, inline = "第一行")
+line1 = input.string("YeĦ.btc⚔️", "第一行", group = TEXT_GROUP, inline = "第一行")
 color1 = input.color(color.white, "颜色", group = TEXT_GROUP, inline = "第一行")
-line2 = input.string("YeĦ.btc⚔️", "第二行", group = TEXT_GROUP, inline = "第二行")
-color2 = input.color(color.white, "颜色", group = TEXT_GROUP, inline = "第二行")
-line3 = input.string("Always long🧲💹", "第三行", group = TEXT_GROUP, inline = "第三行")
-color3 = input.color(#4caf50, "颜色", group = TEXT_GROUP, inline = "第三行")
+line2 = input.string("Always long🧲💹", "第二行", group = TEXT_GROUP, inline = "第二行")
+color2 = input.color(#4caf50, "颜色", group = TEXT_GROUP, inline = "第二行")
 textSize = input.string("大", "字号", options = ["小", "标准", "大", "特大"], group = TEXT_GROUP)
 
 showSymbol = input.bool(true, "品种与周期", group = INFO_GROUP, inline = "显示")
@@ -50,15 +48,14 @@ weekdayName(int timestamp) =>
 textAnchor = anchor(textVertical, textHorizontal)
 infoAnchor = anchor(infoVertical, infoHorizontal)
 sameAnchor = textAnchor == infoAnchor
-var table textWatermark = table.new(textAnchor, 1, sameAnchor ? 5 : 3)
+var table textWatermark = table.new(textAnchor, 1, sameAnchor ? 4 : 2)
 var table infoWatermark = sameAnchor ? textWatermark : table.new(infoAnchor, 1, 2)
 
 if barstate.islast
     table.cell(textWatermark, 0, 0, line1, text_color = color1, text_size = fontSize(textSize))
     table.cell(textWatermark, 0, 1, line2, text_color = color2, text_size = fontSize(textSize))
-    table.cell(textWatermark, 0, 2, line3, text_color = color3, text_size = fontSize(textSize))
 
-    int infoRow = sameAnchor ? 3 : 0
+    int infoRow = sameAnchor ? 2 : 0
     if showSymbol
         string period = timeframe.period
         if timeframe.isminutes
