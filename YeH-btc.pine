@@ -1,0 +1,74 @@
+// 本 Pine Script® 源码遵循 Mozilla Public License 2.0：https://mozilla.org/MPL/2.0/
+// © YeH_btc
+//@version=6
+indicator("YeĦ.btc", overlay = true)
+
+const string TEXT_GROUP = "文字水印"
+const string INFO_GROUP = "品种与日期"
+
+textVertical = input.string("上", "垂直", options = ["上", "中", "下"], group = TEXT_GROUP, inline = "位置")
+textHorizontal = input.string("右", "水平", options = ["左", "中", "右"], group = TEXT_GROUP, inline = "位置")
+line1 = input.string("", "第一行", group = TEXT_GROUP, inline = "第一行")
+color1 = input.color(color.white, "颜色", group = TEXT_GROUP, inline = "第一行")
+line2 = input.string("YeĦ.btc⚔️", "第二行", group = TEXT_GROUP, inline = "第二行")
+color2 = input.color(color.white, "颜色", group = TEXT_GROUP, inline = "第二行")
+line3 = input.string("Always long🧲💹", "第三行", group = TEXT_GROUP, inline = "第三行")
+color3 = input.color(#4caf50, "颜色", group = TEXT_GROUP, inline = "第三行")
+textSize = input.string("大", "字号", options = ["小", "标准", "大", "特大"], group = TEXT_GROUP)
+
+showSymbol = input.bool(true, "品种与周期", group = INFO_GROUP, inline = "显示")
+showDate = input.bool(true, "日期与时间", group = INFO_GROUP, inline = "显示")
+showWeekday = input.bool(false, "星期", group = INFO_GROUP, inline = "显示")
+infoVertical = input.string("下", "垂直", options = ["上", "中", "下"], group = INFO_GROUP, inline = "位置")
+infoHorizontal = input.string("右", "水平", options = ["左", "中", "右"], group = INFO_GROUP, inline = "位置")
+infoSize = input.string("大", "字号", options = ["小", "标准", "大", "特大"], group = INFO_GROUP, inline = "样式")
+infoColor = input.color(#b8b8b8, "颜色", group = INFO_GROUP, inline = "样式")
+timeZone = input.string("GMT+8", "时区", group = INFO_GROUP, tooltip = "例如 GMT+8、UTC 或 America/New_York。")
+
+anchor(string vertical, string horizontal) =>
+    string row = vertical == "上" ? "top" : vertical == "下" ? "bottom" : "middle"
+    string column = horizontal == "左" ? "left" : horizontal == "右" ? "right" : "center"
+    row + "_" + column
+
+fontSize(string setting) =>
+    switch setting
+        "小" => size.small
+        "标准" => size.normal
+        "特大" => size.huge
+        => size.large
+
+weekdayName(int timestamp) =>
+    switch dayofweek(timestamp, timeZone)
+        dayofweek.monday => "星期一"
+        dayofweek.tuesday => "星期二"
+        dayofweek.wednesday => "星期三"
+        dayofweek.thursday => "星期四"
+        dayofweek.friday => "星期五"
+        dayofweek.saturday => "星期六"
+        => "星期日"
+
+textAnchor = anchor(textVertical, textHorizontal)
+infoAnchor = anchor(infoVertical, infoHorizontal)
+sameAnchor = textAnchor == infoAnchor
+var table textWatermark = table.new(textAnchor, 1, sameAnchor ? 5 : 3)
+var table infoWatermark = sameAnchor ? textWatermark : table.new(infoAnchor, 1, 2)
+
+if barstate.islast
+    table.cell(textWatermark, 0, 0, line1, text_color = color1, text_size = fontSize(textSize))
+    table.cell(textWatermark, 0, 1, line2, text_color = color2, text_size = fontSize(textSize))
+    table.cell(textWatermark, 0, 2, line3, text_color = color3, text_size = fontSize(textSize))
+
+    int infoRow = sameAnchor ? 3 : 0
+    if showSymbol
+        string period = timeframe.period
+        if timeframe.isminutes
+            int minutes = timeframe.multiplier
+            period := minutes % 60 == 0 ? str.tostring(minutes / 60) + "h" : str.tostring(minutes) + "m"
+        table.cell(infoWatermark, 0, infoRow, syminfo.ticker + " | " + period, text_color = infoColor, text_size = fontSize(infoSize))
+
+    if showDate
+        int timestamp = timenow >= time and (na(time_close) ? barstate.isrealtime : timenow < time_close) ? timenow : time
+        string dateText = str.format_time(timestamp, "yyyy/M/d", timeZone)
+        string weekday = showWeekday ? " " + weekdayName(timestamp) : ""
+        string clockText = str.format_time(timestamp, "HH:mm", timeZone)
+        table.cell(infoWatermark, 0, infoRow + 1, dateText + weekday + " " + clockText, text_color = infoColor, text_size = fontSize(infoSize))
