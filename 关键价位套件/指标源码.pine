@@ -3,8 +3,8 @@ indicator("关键价位套件", overlay = true, max_lines_count = 150, max_label
 
 const string MASTER = "显示分类"
 const string HTF = "高周期价位"
-const string VWAP = "成交量加权均价"
-const string MA = "移动平均线"
+const string VWAP = "VWAP LEVELS"
+const string MA = "MOVING AVERAGE LEVELS"
 const string SESSION = "交易时段价位"
 const string PROFILE = "成交量分布"
 const string DAY = "星期价位"
@@ -19,7 +19,7 @@ const string YEAR_TF = "年线"
 const string FOUR_H = "4 小时"
 enableHTF = input.bool(true, "高周期", group = MASTER, inline = "分类0", display = display.none)
 enableVWAP = input.bool(true, "VWAP", group = MASTER, inline = "分类1", display = display.none)
-enableMA = input.bool(true, "移动均线", group = MASTER, inline = "分类2", display = display.none)
+enableMA = input.bool(true, "MA", group = MASTER, inline = "分类2", display = display.none)
 enableSESSION = input.bool(true, "交易时段", group = MASTER, inline = "分类0", display = display.none)
 enablePROFILE = input.bool(true, "成交量分布", group = MASTER, inline = "分类1", display = display.none)
 enableDAY = input.bool(true, "星期价位", group = MASTER, inline = "分类2", display = display.none)
@@ -30,7 +30,8 @@ ht0H = input.bool(false, "H", group = HTF, inline = "ht0", display = display.non
 ht0L = input.bool(false, "L", group = HTF, inline = "ht0", display = display.none)
 ht0M = input.bool(false, "½", group = HTF, inline = "ht0", display = display.none)
 // 1 组上期设置
-ht0PrevO = input.bool(false, "上期 O", group = HTF, inline = "ht0Prev", display = display.none)
+ht0History = input.string("p", "", options = ["p", "pp"], group = HTF, inline = "ht0Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+ht0PrevO = input.bool(false, "O", group = HTF, inline = "ht0Prev", display = display.none)
 ht0PrevH = input.bool(false, "H", group = HTF, inline = "ht0Prev", display = display.none)
 ht0PrevL = input.bool(false, "L", group = HTF, inline = "ht0Prev", display = display.none)
 ht0PrevM = input.bool(false, "½", group = HTF, inline = "ht0Prev", display = display.none)
@@ -41,7 +42,8 @@ ht1H = input.bool(false, "H", group = HTF, inline = "ht1", display = display.non
 ht1L = input.bool(false, "L", group = HTF, inline = "ht1", display = display.none)
 ht1M = input.bool(false, "½", group = HTF, inline = "ht1", display = display.none)
 // 2 组上期设置
-ht1PrevO = input.bool(true, "上期 O", group = HTF, inline = "ht1Prev", display = display.none)
+ht1History = input.string("p", "", options = ["p", "pp"], group = HTF, inline = "ht1Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+ht1PrevO = input.bool(true, "O", group = HTF, inline = "ht1Prev", display = display.none)
 ht1PrevH = input.bool(true, "H", group = HTF, inline = "ht1Prev", display = display.none)
 ht1PrevL = input.bool(true, "L", group = HTF, inline = "ht1Prev", display = display.none)
 ht1PrevM = input.bool(false, "½", group = HTF, inline = "ht1Prev", display = display.none)
@@ -52,7 +54,8 @@ ht2H = input.bool(false, "H", group = HTF, inline = "ht2", display = display.non
 ht2L = input.bool(false, "L", group = HTF, inline = "ht2", display = display.none)
 ht2M = input.bool(false, "½", group = HTF, inline = "ht2", display = display.none)
 // 3 组上期设置
-ht2PrevO = input.bool(false, "上期 O", group = HTF, inline = "ht2Prev", display = display.none)
+ht2History = input.string("p", "", options = ["p", "pp"], group = HTF, inline = "ht2Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+ht2PrevO = input.bool(false, "O", group = HTF, inline = "ht2Prev", display = display.none)
 ht2PrevH = input.bool(false, "H", group = HTF, inline = "ht2Prev", display = display.none)
 ht2PrevL = input.bool(false, "L", group = HTF, inline = "ht2Prev", display = display.none)
 ht2PrevM = input.bool(false, "½", group = HTF, inline = "ht2Prev", display = display.none)
@@ -63,43 +66,47 @@ ht3H = input.bool(false, "H", group = HTF, inline = "ht3", display = display.non
 ht3L = input.bool(false, "L", group = HTF, inline = "ht3", display = display.none)
 ht3M = input.bool(false, "½", group = HTF, inline = "ht3", display = display.none)
 // 4 组上期设置
-ht3PrevO = input.bool(false, "上期 O", group = HTF, inline = "ht3Prev", display = display.none)
+ht3History = input.string("p", "", options = ["p", "pp"], group = HTF, inline = "ht3Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+ht3PrevO = input.bool(false, "O", group = HTF, inline = "ht3Prev", display = display.none)
 ht3PrevH = input.bool(false, "H", group = HTF, inline = "ht3Prev", display = display.none)
 ht3PrevL = input.bool(false, "L", group = HTF, inline = "ht3Prev", display = display.none)
 ht3PrevM = input.bool(false, "½", group = HTF, inline = "ht3Prev", display = display.none)
 vw0Color = input.color(#d4d8e2, "", group = VWAP, inline = "vw0", display = display.none)
 vw0Tf = input.string(DAY_TF, "周期", group = VWAP, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "vw0", display = display.none)
-vw0Vwap = input.bool(false, "均价", group = VWAP, inline = "vw0", display = display.none)
-vw0Sd = input.bool(false, "标准差", group = VWAP, inline = "vw0", display = display.none)
+vw0Vwap = input.bool(false, "VWAP", group = VWAP, inline = "vw0", display = display.none)
+vw0Sd = input.bool(false, "SD", group = VWAP, inline = "vw0", display = display.none)
 // 1 组上期设置
-vw0PrevVwap = input.bool(false, "上期 均价", group = VWAP, inline = "vw0Prev", display = display.none)
-vw0PrevSd = input.bool(false, "标准差", group = VWAP, inline = "vw0Prev", display = display.none)
+vw0History = input.string("p", "", options = ["p", "pp"], group = VWAP, inline = "vw0Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+vw0PrevVwap = input.bool(false, "VWAP", group = VWAP, inline = "vw0Prev", display = display.none)
+vw0PrevSd = input.bool(false, "SD", group = VWAP, inline = "vw0Prev", display = display.none)
 vw1Color = input.color(#f0cdb0, "", group = VWAP, inline = "vw1", display = display.none)
 vw1Tf = input.string(WEEK_TF, "周期", group = VWAP, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "vw1", display = display.none)
-vw1Vwap = input.bool(false, "均价", group = VWAP, inline = "vw1", display = display.none)
-vw1Sd = input.bool(false, "标准差", group = VWAP, inline = "vw1", display = display.none)
+vw1Vwap = input.bool(false, "VWAP", group = VWAP, inline = "vw1", display = display.none)
+vw1Sd = input.bool(false, "SD", group = VWAP, inline = "vw1", display = display.none)
 // 2 组上期设置
-vw1PrevVwap = input.bool(false, "上期 均价", group = VWAP, inline = "vw1Prev", display = display.none)
-vw1PrevSd = input.bool(false, "标准差", group = VWAP, inline = "vw1Prev", display = display.none)
+vw1History = input.string("p", "", options = ["p", "pp"], group = VWAP, inline = "vw1Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+vw1PrevVwap = input.bool(false, "VWAP", group = VWAP, inline = "vw1Prev", display = display.none)
+vw1PrevSd = input.bool(false, "SD", group = VWAP, inline = "vw1Prev", display = display.none)
 vw2Color = input.color(#abd29e, "", group = VWAP, inline = "vw2", display = display.none)
 vw2Tf = input.string(MONTH_TF, "周期", group = VWAP, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "vw2", display = display.none)
-vw2Vwap = input.bool(false, "均价", group = VWAP, inline = "vw2", display = display.none)
-vw2Sd = input.bool(false, "标准差", group = VWAP, inline = "vw2", display = display.none)
+vw2Vwap = input.bool(false, "VWAP", group = VWAP, inline = "vw2", display = display.none)
+vw2Sd = input.bool(false, "SD", group = VWAP, inline = "vw2", display = display.none)
 // 3 组上期设置
-vw2PrevVwap = input.bool(false, "上期 均价", group = VWAP, inline = "vw2Prev", display = display.none)
-vw2PrevSd = input.bool(false, "标准差", group = VWAP, inline = "vw2Prev", display = display.none)
+vw2History = input.string("p", "", options = ["p", "pp"], group = VWAP, inline = "vw2Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+vw2PrevVwap = input.bool(false, "VWAP", group = VWAP, inline = "vw2Prev", display = display.none)
+vw2PrevSd = input.bool(false, "SD", group = VWAP, inline = "vw2Prev", display = display.none)
 ma0Color = input.color(#f5e5a4, "", group = MA, inline = "ma0", display = display.none)
 ma0Len = input.int(50, "长度", group = MA, minval = 1, maxval = 5000, inline = "ma0", display = display.none)
-ma0Sma = input.bool(false, "简单均线", group = MA, inline = "ma0", display = display.none)
-ma0Ema = input.bool(false, "指数均线", group = MA, inline = "ma0", display = display.none)
+ma0Sma = input.bool(false, "MA", group = MA, inline = "ma0", display = display.none)
+ma0Ema = input.bool(false, "EMA", group = MA, inline = "ma0", display = display.none)
 ma1Color = input.color(#f4b9b8, "", group = MA, inline = "ma1", display = display.none)
 ma1Len = input.int(100, "长度", group = MA, minval = 1, maxval = 5000, inline = "ma1", display = display.none)
-ma1Sma = input.bool(false, "简单均线", group = MA, inline = "ma1", display = display.none)
-ma1Ema = input.bool(false, "指数均线", group = MA, inline = "ma1", display = display.none)
+ma1Sma = input.bool(false, "MA", group = MA, inline = "ma1", display = display.none)
+ma1Ema = input.bool(false, "EMA", group = MA, inline = "ma1", display = display.none)
 ma2Color = input.color(#a8dcf8, "", group = MA, inline = "ma2", display = display.none)
 ma2Len = input.int(200, "长度", group = MA, minval = 1, maxval = 5000, inline = "ma2", display = display.none)
-ma2Sma = input.bool(false, "简单均线", group = MA, inline = "ma2", display = display.none)
-ma2Ema = input.bool(false, "指数均线", group = MA, inline = "ma2", display = display.none)
+ma2Sma = input.bool(false, "MA", group = MA, inline = "ma2", display = display.none)
+ma2Ema = input.bool(false, "EMA", group = MA, inline = "ma2", display = display.none)
 ss0Color = input.color(#eabacf, "", group = SESSION, inline = "ss0", display = display.none)
 ss0Hours = input.session("0900-1500", "时段", group = SESSION, inline = "ss0", display = display.none)
 ss0O = input.bool(false, "O", group = SESSION, inline = "ss0", display = display.none)
@@ -107,7 +114,8 @@ ss0H = input.bool(false, "H", group = SESSION, inline = "ss0", display = display
 ss0L = input.bool(false, "L", group = SESSION, inline = "ss0", display = display.none)
 ss0M = input.bool(false, "½", group = SESSION, inline = "ss0", display = display.none)
 // 1 组上期设置
-ss0PrevO = input.bool(false, "上期 O", group = SESSION, inline = "ss0Prev", display = display.none)
+ss0History = input.string("p", "", options = ["p", "pp"], group = SESSION, inline = "ss0Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+ss0PrevO = input.bool(false, "O", group = SESSION, inline = "ss0Prev", display = display.none)
 ss0PrevH = input.bool(false, "H", group = SESSION, inline = "ss0Prev", display = display.none)
 ss0PrevL = input.bool(false, "L", group = SESSION, inline = "ss0Prev", display = display.none)
 ss0PrevM = input.bool(false, "½", group = SESSION, inline = "ss0Prev", display = display.none)
@@ -118,7 +126,8 @@ ss1H = input.bool(false, "H", group = SESSION, inline = "ss1", display = display
 ss1L = input.bool(false, "L", group = SESSION, inline = "ss1", display = display.none)
 ss1M = input.bool(false, "½", group = SESSION, inline = "ss1", display = display.none)
 // 2 组上期设置
-ss1PrevO = input.bool(false, "上期 O", group = SESSION, inline = "ss1Prev", display = display.none)
+ss1History = input.string("p", "", options = ["p", "pp"], group = SESSION, inline = "ss1Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+ss1PrevO = input.bool(false, "O", group = SESSION, inline = "ss1Prev", display = display.none)
 ss1PrevH = input.bool(false, "H", group = SESSION, inline = "ss1Prev", display = display.none)
 ss1PrevL = input.bool(false, "L", group = SESSION, inline = "ss1Prev", display = display.none)
 ss1PrevM = input.bool(false, "½", group = SESSION, inline = "ss1Prev", display = display.none)
@@ -129,7 +138,8 @@ ss2H = input.bool(false, "H", group = SESSION, inline = "ss2", display = display
 ss2L = input.bool(false, "L", group = SESSION, inline = "ss2", display = display.none)
 ss2M = input.bool(false, "½", group = SESSION, inline = "ss2", display = display.none)
 // 3 组上期设置
-ss2PrevO = input.bool(false, "上期 O", group = SESSION, inline = "ss2Prev", display = display.none)
+ss2History = input.string("p", "", options = ["p", "pp"], group = SESSION, inline = "ss2Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+ss2PrevO = input.bool(false, "O", group = SESSION, inline = "ss2Prev", display = display.none)
 ss2PrevH = input.bool(false, "H", group = SESSION, inline = "ss2Prev", display = display.none)
 ss2PrevL = input.bool(false, "L", group = SESSION, inline = "ss2Prev", display = display.none)
 ss2PrevM = input.bool(false, "½", group = SESSION, inline = "ss2Prev", display = display.none)
@@ -138,21 +148,24 @@ vp0Tf = input.string(DAY_TF, "周期", group = PROFILE, options = [FOUR_H, DAY_T
 vp0Poc = input.bool(false, "POC", group = PROFILE, inline = "vp0", display = display.none)
 vp0Va = input.bool(false, "价值区", group = PROFILE, inline = "vp0", display = display.none)
 // 1 组上期设置
-vp0PrevPoc = input.bool(false, "上期 POC", group = PROFILE, inline = "vp0Prev", display = display.none)
+vp0History = input.string("p", "", options = ["p", "pp"], group = PROFILE, inline = "vp0Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+vp0PrevPoc = input.bool(false, "POC", group = PROFILE, inline = "vp0Prev", display = display.none)
 vp0PrevVa = input.bool(false, "价值区", group = PROFILE, inline = "vp0Prev", display = display.none)
 vp1Color = input.color(#f4d5ab, "", group = PROFILE, inline = "vp1", display = display.none)
 vp1Tf = input.string(WEEK_TF, "周期", group = PROFILE, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "vp1", display = display.none)
 vp1Poc = input.bool(false, "POC", group = PROFILE, inline = "vp1", display = display.none)
 vp1Va = input.bool(false, "价值区", group = PROFILE, inline = "vp1", display = display.none)
 // 2 组上期设置
-vp1PrevPoc = input.bool(false, "上期 POC", group = PROFILE, inline = "vp1Prev", display = display.none)
+vp1History = input.string("p", "", options = ["p", "pp"], group = PROFILE, inline = "vp1Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+vp1PrevPoc = input.bool(false, "POC", group = PROFILE, inline = "vp1Prev", display = display.none)
 vp1PrevVa = input.bool(false, "价值区", group = PROFILE, inline = "vp1Prev", display = display.none)
 vp2Color = input.color(#cadecf, "", group = PROFILE, inline = "vp2", display = display.none)
 vp2Tf = input.string(MONTH_TF, "周期", group = PROFILE, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "vp2", display = display.none)
 vp2Poc = input.bool(false, "POC", group = PROFILE, inline = "vp2", display = display.none)
 vp2Va = input.bool(false, "价值区", group = PROFILE, inline = "vp2", display = display.none)
 // 3 组上期设置
-vp2PrevPoc = input.bool(false, "上期 POC", group = PROFILE, inline = "vp2Prev", display = display.none)
+vp2History = input.string("p", "", options = ["p", "pp"], group = PROFILE, inline = "vp2Prev", tooltip = "p 为上期，pp 为上上期。", display = display.none)
+vp2PrevPoc = input.bool(false, "POC", group = PROFILE, inline = "vp2Prev", display = display.none)
 vp2PrevVa = input.bool(false, "价值区", group = PROFILE, inline = "vp2Prev", display = display.none)
 dy0Color = input.color(#bfd7b6, "", group = DAY, inline = "dy0", display = display.none)
 dy0Day = input.string("星期一", "星期", group = DAY, options = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"], inline = "dy0", display = display.none)
@@ -207,7 +220,7 @@ yearTag = input.string("y", "年线", group = LABELS, display = display.none)
 ss0Tag = input.string("Tokyo", "时段 1", group = LABELS, display = display.none)
 ss1Tag = input.string("London", "时段 2", group = LABELS, display = display.none)
 ss2Tag = input.string("NY", "时段 3", group = LABELS, display = display.none)
-vwapTag = input.string("VWAP", "成交量加权均价", group = LABELS, display = display.none)
+vwapTag = input.string("VWAP", "VWAP", group = LABELS, display = display.none)
 dyTag0 = input.string("mon", "星期一", group = LABELS, display = display.none)
 dyTag1 = input.string("tue", "星期二", group = LABELS, display = display.none)
 dyTag2 = input.string("wed", "星期三", group = LABELS, display = display.none)
@@ -215,6 +228,9 @@ dyTag3 = input.string("thu", "星期四", group = LABELS, display = display.none
 dyTag4 = input.string("fri", "星期五", group = LABELS, display = display.none)
 dyTag5 = input.string("sat", "星期六", group = LABELS, display = display.none)
 dyTag6 = input.string("sun", "星期日", group = LABELS, display = display.none)
+
+historyTag(string choice) =>
+    choice == "pp" ? "pp" : prevTag
 
 periodCode(string choice) =>
     switch choice
@@ -286,16 +302,18 @@ emitRange(bool useOpen, bool useHigh, bool useLow, bool useMid, float o, float h
     emitLevel(useLow, l, prefix + lowTag, shade, origin)
     emitLevel(useMid, (h + l) / 2, prefix + midTag, shade, origin)
 
-higherLevels(string choice, color shade, bool co, bool ch, bool cl, bool cm, bool po, bool ph, bool pl, bool pm) =>
+higherLevels(string choice, string history, color shade, bool co, bool ch, bool cl, bool cm, bool po, bool ph, bool pl, bool pm) =>
     string tf = periodCode(choice)
     if enableHTF and (co or ch or cl or cm or po or ph or pl or pm) and timeframe.in_seconds(tf) >= timeframe.in_seconds()
-        [o, priorO, priorH, priorL] = request.security(syminfo.tickerid, tf, [open, open[1], high[1], low[1]], lookahead = barmerge.lookahead_on)
+        [o, priorO, priorH, priorL, olderO, olderH, olderL] = request.security(syminfo.tickerid, tf, [open, open[1], high[1], low[1], open[2], high[2], low[2]], lookahead = barmerge.lookahead_on)
         bool reset = timeframe.change(tf)
         var float runningHigh = na
         var float runningLow = na
         var int origin = bar_index
         var int priorOrigin = bar_index
+        var int olderOrigin = bar_index
         if reset or na(runningHigh)
+            olderOrigin := priorOrigin
             priorOrigin := origin
             origin := bar_index
             runningHigh := high
@@ -304,7 +322,8 @@ higherLevels(string choice, color shade, bool co, bool ch, bool cl, bool cm, boo
             runningHigh := math.max(runningHigh, high)
             runningLow := math.min(runningLow, low)
         emitRange(co, ch, cl, cm, o, runningHigh, runningLow, periodTag(choice), shade, origin)
-        emitRange(po, ph, pl, pm, priorO, priorH, priorL, prevTag + periodTag(choice), shade, priorOrigin)
+        bool older = history == "pp"
+        emitRange(po, ph, pl, pm, older ? olderO : priorO, older ? olderH : priorH, older ? olderL : priorL, historyTag(history) + periodTag(choice), shade, older ? olderOrigin : priorOrigin)
     0
 
 emitVwap(bool meanOn, bool deviationOn, float mean, float sd, string prefix, color shade, int origin) =>
@@ -312,7 +331,7 @@ emitVwap(bool meanOn, bool deviationOn, float mean, float sd, string prefix, col
     emitLevel(deviationOn, mean + sd, prefix + vwapTag + "+1σ", shade, origin)
     emitLevel(deviationOn, mean - sd, prefix + vwapTag + "−1σ", shade, origin)
 
-vwapLevels(string choice, color shade, bool cv, bool cs, bool pv, bool ps) =>
+vwapLevels(string choice, string history, color shade, bool cv, bool cs, bool pv, bool ps) =>
     string tf = periodCode(choice)
     if enableVWAP and (cv or cs or pv or ps) and timeframe.in_seconds(tf) >= timeframe.in_seconds()
         bool reset = timeframe.change(tf)
@@ -321,13 +340,20 @@ vwapLevels(string choice, color shade, bool cv, bool cs, bool pv, bool ps) =>
         var float priorSd = na
         var int origin = bar_index
         var int priorOrigin = bar_index
+        var float olderMean = na
+        var float olderSd = na
+        var int olderOrigin = bar_index
         if reset
+            olderMean := priorMean
+            olderSd := priorSd
+            olderOrigin := priorOrigin
             priorMean := mean[1]
             priorSd := upper[1] - mean[1]
             priorOrigin := origin
             origin := bar_index
         emitVwap(cv, cs, mean, upper - mean, periodTag(choice), shade, origin)
-        emitVwap(pv, ps, priorMean, priorSd, prevTag + periodTag(choice), shade, priorOrigin)
+        bool older = history == "pp"
+        emitVwap(pv, ps, older ? olderMean : priorMean, older ? olderSd : priorSd, historyTag(history) + periodTag(choice), shade, older ? olderOrigin : priorOrigin)
     0
 
 averageLevels(int length, color shade, bool simpleOn, bool exponentialOn) =>
@@ -336,7 +362,7 @@ averageLevels(int length, color shade, bool simpleOn, bool exponentialOn) =>
     emitLevel(enableMA and simpleOn, simple, str.tostring(length) + " SMA", shade, bar_index - offsetLeft)
     emitLevel(enableMA and exponentialOn, exponential, str.tostring(length) + " EMA", shade, bar_index - offsetLeft)
 
-sessionLevels(string hours, string zone, string prefix, color shade, bool co, bool ch, bool cl, bool cm, bool po, bool ph, bool pl, bool pm) =>
+sessionLevels(string hours, string history, string zone, string prefix, color shade, bool co, bool ch, bool cl, bool cm, bool po, bool ph, bool pl, bool pm) =>
     if enableSESSION and timeframe.isintraday and (co or ch or cl or cm or po or ph or pl or pm)
         bool inside = not na(time(timeframe.period, hours + ":1234567", zone))
         int sessionStart = time("1D", hours + ":1234567", zone)
@@ -349,7 +375,15 @@ sessionLevels(string hours, string zone, string prefix, color shade, bool co, bo
         var float priorL = na
         var int origin = bar_index
         var int priorOrigin = bar_index
+        var float olderO = na
+        var float olderH = na
+        var float olderL = na
+        var int olderOrigin = bar_index
         if begins
+            olderO := priorO
+            olderH := priorH
+            olderL := priorL
+            olderOrigin := priorOrigin
             priorO := so
             priorH := sh
             priorL := sl
@@ -362,7 +396,8 @@ sessionLevels(string hours, string zone, string prefix, color shade, bool co, bo
             sh := math.max(sh, high)
             sl := math.min(sl, low)
         emitRange(co, ch, cl, cm, so, sh, sl, prefix, shade, origin)
-        emitRange(po, ph, pl, pm, priorO, priorH, priorL, prevTag + prefix, shade, priorOrigin)
+        bool older = history == "pp"
+        emitRange(po, ph, pl, pm, older ? olderO : priorO, older ? olderH : priorH, older ? olderL : priorL, historyTag(history) + prefix, shade, older ? olderOrigin : priorOrigin)
     0
 
 dayLevels(string choice, color shade, bool co, bool ch, bool cl, bool cm) =>
@@ -427,7 +462,7 @@ emitProfile(bool pocOn, bool vaOn, float poc, float vah, float val, string prefi
     emitLevel(vaOn, vah, prefix + "VAH", shade, origin)
     emitLevel(vaOn, val, prefix + "VAL", shade, origin)
 
-profileLevels(string choice, color shade, bool cp, bool ca, bool pp, bool pa) =>
+profileLevels(string choice, string history, color shade, bool cp, bool ca, bool pp, bool pa) =>
     string tf = periodCode(choice)
     if enablePROFILE and (cp or ca or pp or pa) and timeframe.in_seconds(tf) >= timeframe.in_seconds()
         var array<float> prices = array.new_float()
@@ -437,7 +472,15 @@ profileLevels(string choice, color shade, bool cp, bool ca, bool pp, bool pa) =>
         var float priorPoc = na
         var float priorVah = na
         var float priorVal = na
+        var float olderPoc = na
+        var float olderVah = na
+        var float olderVal = na
+        var int olderOrigin = bar_index
         if timeframe.change(tf)
+            olderPoc := priorPoc
+            olderVah := priorVah
+            olderVal := priorVal
+            olderOrigin := priorOrigin
             if pp or pa
                 [poc, vah, val] = profile(prices, volumes)
                 priorPoc := poc
@@ -458,28 +501,29 @@ profileLevels(string choice, color shade, bool cp, bool ca, bool pp, bool pa) =>
             if cp or ca
                 [poc, vah, val] = profile(prices, volumes)
                 emitProfile(cp, ca, poc, vah, val, periodTag(choice), shade, origin)
-            emitProfile(pp, pa, priorPoc, priorVah, priorVal, prevTag + periodTag(choice), shade, priorOrigin)
+            bool older = history == "pp"
+            emitProfile(pp, pa, older ? olderPoc : priorPoc, older ? olderVah : priorVah, older ? olderVal : priorVal, historyTag(history) + periodTag(choice), shade, older ? olderOrigin : priorOrigin)
     0
 
 if barstate.islast
     array.clear(levels)
 
-higherLevels(ht0Tf, ht0Color, ht0O, ht0H, ht0L, ht0M, ht0PrevO, ht0PrevH, ht0PrevL, ht0PrevM)
-higherLevels(ht1Tf, ht1Color, ht1O, ht1H, ht1L, ht1M, ht1PrevO, ht1PrevH, ht1PrevL, ht1PrevM)
-higherLevels(ht2Tf, ht2Color, ht2O, ht2H, ht2L, ht2M, ht2PrevO, ht2PrevH, ht2PrevL, ht2PrevM)
-higherLevels(ht3Tf, ht3Color, ht3O, ht3H, ht3L, ht3M, ht3PrevO, ht3PrevH, ht3PrevL, ht3PrevM)
-vwapLevels(vw0Tf, vw0Color, vw0Vwap, vw0Sd, vw0PrevVwap, vw0PrevSd)
-vwapLevels(vw1Tf, vw1Color, vw1Vwap, vw1Sd, vw1PrevVwap, vw1PrevSd)
-vwapLevels(vw2Tf, vw2Color, vw2Vwap, vw2Sd, vw2PrevVwap, vw2PrevSd)
+higherLevels(ht0Tf, ht0History, ht0Color, ht0O, ht0H, ht0L, ht0M, ht0PrevO, ht0PrevH, ht0PrevL, ht0PrevM)
+higherLevels(ht1Tf, ht1History, ht1Color, ht1O, ht1H, ht1L, ht1M, ht1PrevO, ht1PrevH, ht1PrevL, ht1PrevM)
+higherLevels(ht2Tf, ht2History, ht2Color, ht2O, ht2H, ht2L, ht2M, ht2PrevO, ht2PrevH, ht2PrevL, ht2PrevM)
+higherLevels(ht3Tf, ht3History, ht3Color, ht3O, ht3H, ht3L, ht3M, ht3PrevO, ht3PrevH, ht3PrevL, ht3PrevM)
+vwapLevels(vw0Tf, vw0History, vw0Color, vw0Vwap, vw0Sd, vw0PrevVwap, vw0PrevSd)
+vwapLevels(vw1Tf, vw1History, vw1Color, vw1Vwap, vw1Sd, vw1PrevVwap, vw1PrevSd)
+vwapLevels(vw2Tf, vw2History, vw2Color, vw2Vwap, vw2Sd, vw2PrevVwap, vw2PrevSd)
 averageLevels(ma0Len, ma0Color, ma0Sma, ma0Ema)
 averageLevels(ma1Len, ma1Color, ma1Sma, ma1Ema)
 averageLevels(ma2Len, ma2Color, ma2Sma, ma2Ema)
-sessionLevels(ss0Hours, tz0, ss0Tag, ss0Color, ss0O, ss0H, ss0L, ss0M, ss0PrevO, ss0PrevH, ss0PrevL, ss0PrevM)
-sessionLevels(ss1Hours, tz1, ss1Tag, ss1Color, ss1O, ss1H, ss1L, ss1M, ss1PrevO, ss1PrevH, ss1PrevL, ss1PrevM)
-sessionLevels(ss2Hours, tz2, ss2Tag, ss2Color, ss2O, ss2H, ss2L, ss2M, ss2PrevO, ss2PrevH, ss2PrevL, ss2PrevM)
-profileLevels(vp0Tf, vp0Color, vp0Poc, vp0Va, vp0PrevPoc, vp0PrevVa)
-profileLevels(vp1Tf, vp1Color, vp1Poc, vp1Va, vp1PrevPoc, vp1PrevVa)
-profileLevels(vp2Tf, vp2Color, vp2Poc, vp2Va, vp2PrevPoc, vp2PrevVa)
+sessionLevels(ss0Hours, ss0History, tz0, ss0Tag, ss0Color, ss0O, ss0H, ss0L, ss0M, ss0PrevO, ss0PrevH, ss0PrevL, ss0PrevM)
+sessionLevels(ss1Hours, ss1History, tz1, ss1Tag, ss1Color, ss1O, ss1H, ss1L, ss1M, ss1PrevO, ss1PrevH, ss1PrevL, ss1PrevM)
+sessionLevels(ss2Hours, ss2History, tz2, ss2Tag, ss2Color, ss2O, ss2H, ss2L, ss2M, ss2PrevO, ss2PrevH, ss2PrevL, ss2PrevM)
+profileLevels(vp0Tf, vp0History, vp0Color, vp0Poc, vp0Va, vp0PrevPoc, vp0PrevVa)
+profileLevels(vp1Tf, vp1History, vp1Color, vp1Poc, vp1Va, vp1PrevPoc, vp1PrevVa)
+profileLevels(vp2Tf, vp2History, vp2Color, vp2Poc, vp2Va, vp2PrevPoc, vp2PrevVa)
 dayLevels(dy0Day, dy0Color, dy0O, dy0H, dy0L, dy0M)
 dayLevels(dy1Day, dy1Color, dy1O, dy1H, dy1L, dy1M)
 dayLevels(dy2Day, dy2Color, dy2O, dy2H, dy2L, dy2M)
