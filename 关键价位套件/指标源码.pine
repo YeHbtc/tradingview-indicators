@@ -264,6 +264,17 @@ dayName(int number) =>
         dayofweek.saturday => dyTag5
         => dyTag6
 
+// 在周期开始时记录起点时间，避免低周期图表绘制远端历史线时触发索引限制。
+max_bars_back(time, 5000)
+int startTime = time[math.min(bar_index, offsetLeft)]
+max_bars_back(startTime, 5000)
+int averageStartTime = startTime[math.min(bar_index, 9999 - offsetLeft, offsetLeft)]
+
+futureTime(int bars) =>
+    int projected = time("", bars_back = -bars)
+    int stepMs = math.max(1, nz(timeframe.in_seconds() * 1000, nz(time - time[1], 1)))
+    nz(projected, time + bars * stepMs)
+
 type Level
     float price
     string title
@@ -303,13 +314,13 @@ higherLevels(string choice, string history, color shade, bool co, bool ch, bool 
         bool reset = timeframe.change(tf)
         var float runningHigh = na
         var float runningLow = na
-        var int origin = bar_index
-        var int priorOrigin = bar_index
-        var int olderOrigin = bar_index
+        var int origin = startTime
+        var int priorOrigin = startTime
+        var int olderOrigin = startTime
         if reset or na(runningHigh)
             olderOrigin := priorOrigin
             priorOrigin := origin
-            origin := bar_index
+            origin := startTime
             runningHigh := high
             runningLow := low
         else
@@ -332,11 +343,11 @@ vwapLevels(string choice, string history, color shade, bool cv, bool cs, bool pv
         [mean, upper, lower] = ta.vwap(hlc3, reset or barstate.isfirst, 1)
         var float priorMean = na
         var float priorSd = na
-        var int origin = bar_index
-        var int priorOrigin = bar_index
+        var int origin = startTime
+        var int priorOrigin = startTime
         var float olderMean = na
         var float olderSd = na
-        var int olderOrigin = bar_index
+        var int olderOrigin = startTime
         if reset
             olderMean := priorMean
             olderSd := priorSd
@@ -344,7 +355,7 @@ vwapLevels(string choice, string history, color shade, bool cv, bool cs, bool pv
             priorMean := mean[1]
             priorSd := upper[1] - mean[1]
             priorOrigin := origin
-            origin := bar_index
+            origin := startTime
         emitVwap(cv, cs, mean, upper - mean, periodTag(choice), shade, origin)
         bool older = history == "pp"
         emitVwap(pv, ps, older ? olderMean : priorMean, older ? olderSd : priorSd, historyTag(history) + periodTag(choice), shade, older ? olderOrigin : priorOrigin)
@@ -353,8 +364,8 @@ vwapLevels(string choice, string history, color shade, bool cv, bool cs, bool pv
 averageLevels(int length, color shade, bool simpleOn, bool exponentialOn) =>
     float simple = ta.sma(close, length)
     float exponential = ta.ema(close, length)
-    emitLevel(enableMA and simpleOn, simple, str.tostring(length) + " SMA", shade, bar_index - offsetLeft)
-    emitLevel(enableMA and exponentialOn, exponential, str.tostring(length) + " EMA", shade, bar_index - offsetLeft)
+    emitLevel(enableMA and simpleOn, simple, str.tostring(length) + " SMA", shade, averageStartTime)
+    emitLevel(enableMA and exponentialOn, exponential, str.tostring(length) + " EMA", shade, averageStartTime)
 
 sessionLevels(string hours, string history, string zone, string prefix, color shade, bool co, bool ch, bool cl, bool cm, bool po, bool ph, bool pl, bool pm) =>
     if enableSESSION and timeframe.isintraday and (co or ch or cl or cm or po or ph or pl or pm)
@@ -367,12 +378,12 @@ sessionLevels(string hours, string history, string zone, string prefix, color sh
         var float priorO = na
         var float priorH = na
         var float priorL = na
-        var int origin = bar_index
-        var int priorOrigin = bar_index
+        var int origin = startTime
+        var int priorOrigin = startTime
         var float olderO = na
         var float olderH = na
         var float olderL = na
-        var int olderOrigin = bar_index
+        var int olderOrigin = startTime
         if begins
             olderO := priorO
             olderH := priorH
@@ -385,7 +396,7 @@ sessionLevels(string hours, string history, string zone, string prefix, color sh
             so := open
             sh := high
             sl := low
-            origin := bar_index
+            origin := startTime
         else if inside
             sh := math.max(sh, high)
             sl := math.min(sl, low)
@@ -401,13 +412,13 @@ dayLevels(string choice, color shade, bool co, bool ch, bool cl, bool cm) =>
         var float so = na
         var float sh = na
         var float sl = na
-        var int origin = bar_index
+        var int origin = startTime
         if sessionDay == number
             if time_tradingday != time_tradingday[1] or na(so)
                 so := open
                 sh := high
                 sl := low
-                origin := bar_index
+                origin := startTime
             else
                 sh := math.max(sh, high)
                 sl := math.min(sl, low)
@@ -461,15 +472,15 @@ profileLevels(string choice, string history, color shade, bool cp, bool ca, bool
     if enablePROFILE and (cp or ca or pp or pa) and timeframe.in_seconds(tf) >= timeframe.in_seconds()
         var array<float> prices = array.new_float()
         var array<float> volumes = array.new_float()
-        var int origin = bar_index
-        var int priorOrigin = bar_index
+        var int origin = startTime
+        var int priorOrigin = startTime
         var float priorPoc = na
         var float priorVah = na
         var float priorVal = na
         var float olderPoc = na
         var float olderVah = na
         var float olderVal = na
-        var int olderOrigin = bar_index
+        var int olderOrigin = startTime
         if timeframe.change(tf)
             olderPoc := priorPoc
             olderVah := priorVah
@@ -483,7 +494,7 @@ profileLevels(string choice, string history, color shade, bool cp, bool ca, bool
             array.clear(prices)
             array.clear(volumes)
             priorOrigin := origin
-            origin := bar_index
+            origin := startTime
         int capacity = fastProfile ? 1500 : 6000
         if not na(volume) and volume > 0
             if array.size(prices) >= capacity
@@ -542,15 +553,15 @@ if barstate.islast
         "大" => size.large
         "特大" => size.huge
         => size.normal
-    int end = bar_index + offsetRight
+    int end = futureTime(offsetRight)
+    int labelTime = futureTime(offsetRight + 2)
     for item in levels
         color shade = overrideColors ? overrideColor : item.shade
-        int start = math.max(0, bar_index - 9999, item.start - offsetLeft)
-        array.push(drawnLines, line.new(start, item.price, end, item.price, extend = extension, color = shade, style = style, width = lineWidth))
+        array.push(drawnLines, line.new(item.start, item.price, end, item.price, xloc = xloc.bar_time, extend = extension, color = shade, style = style, width = lineWidth))
         string caption = showName ? item.title : ""
         if showPrice
             caption += (caption == "" ? "" : " · ") + str.tostring(item.price, format.mintick)
         if showDistance and close != 0
             caption += (caption == "" ? "" : " · ") + str.tostring((item.price - close) / close * 100, "0.00") + "%"
         if caption != ""
-            array.push(drawnLabels, label.new(end + 2, item.price, caption, style = label.style_label_left, color = color.new(shade, 100), textcolor = shade, size = textSize, text_font_family = labelFont))
+            array.push(drawnLabels, label.new(labelTime, item.price, caption, xloc = xloc.bar_time, style = label.style_label_left, color = color.new(shade, 100), textcolor = shade, size = textSize, text_font_family = labelFont))
