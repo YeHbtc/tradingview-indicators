@@ -1,0 +1,518 @@
+//@version=6
+indicator("关键价位套件", overlay = true, max_lines_count = 150, max_labels_count = 150)
+
+const string MASTER = "显示分类"
+const string HTF = "高周期价位"
+const string VWAP = "成交量加权均价"
+const string MA = "移动平均线"
+const string SESSION = "交易时段价位"
+const string PROFILE = "成交量分布"
+const string DAY = "星期价位"
+const string STYLE = "外观"
+const string OTHER = "其他设置"
+const string LABELS = "标签缩写"
+const string DAY_TF = "日线"
+const string WEEK_TF = "周线"
+const string MONTH_TF = "月线"
+const string QUARTER_TF = "季线"
+const string YEAR_TF = "年线"
+const string FOUR_H = "4 小时"
+enableHTF = input.bool(true, "高周期", group = MASTER, inline = "分类0", display = display.none)
+enableVWAP = input.bool(true, "VWAP", group = MASTER, inline = "分类1", display = display.none)
+enableMA = input.bool(true, "移动均线", group = MASTER, inline = "分类2", display = display.none)
+enableSESSION = input.bool(true, "交易时段", group = MASTER, inline = "分类0", display = display.none)
+enablePROFILE = input.bool(true, "成交量分布", group = MASTER, inline = "分类1", display = display.none)
+enableDAY = input.bool(true, "星期价位", group = MASTER, inline = "分类2", display = display.none)
+ht0Color = input.color(#a6c1d8, "颜色", group = HTF, inline = "ht0", display = display.none)
+ht0Tf = input.string(DAY_TF, "周期", group = HTF, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "ht0", display = display.none)
+ht0O = input.bool(true, "开", group = HTF, inline = "ht0", display = display.none)
+ht0H = input.bool(false, "高", group = HTF, inline = "ht0", display = display.none)
+ht0L = input.bool(false, "低", group = HTF, inline = "ht0", display = display.none)
+ht0M = input.bool(false, "中", group = HTF, inline = "ht0", display = display.none)
+// 1 组上期设置
+ht0PrevO = input.bool(false, "上期 开", group = HTF, inline = "ht0Prev", display = display.none)
+ht0PrevH = input.bool(false, "高", group = HTF, inline = "ht0Prev", display = display.none)
+ht0PrevL = input.bool(false, "低", group = HTF, inline = "ht0Prev", display = display.none)
+ht0PrevM = input.bool(false, "中", group = HTF, inline = "ht0Prev", display = display.none)
+ht1Color = input.color(#f6c49a, "颜色", group = HTF, inline = "ht1", display = display.none)
+ht1Tf = input.string(WEEK_TF, "周期", group = HTF, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "ht1", display = display.none)
+ht1O = input.bool(true, "开", group = HTF, inline = "ht1", display = display.none)
+ht1H = input.bool(false, "高", group = HTF, inline = "ht1", display = display.none)
+ht1L = input.bool(false, "低", group = HTF, inline = "ht1", display = display.none)
+ht1M = input.bool(false, "中", group = HTF, inline = "ht1", display = display.none)
+// 2 组上期设置
+ht1PrevO = input.bool(true, "上期 开", group = HTF, inline = "ht1Prev", display = display.none)
+ht1PrevH = input.bool(true, "高", group = HTF, inline = "ht1Prev", display = display.none)
+ht1PrevL = input.bool(true, "低", group = HTF, inline = "ht1Prev", display = display.none)
+ht1PrevM = input.bool(false, "中", group = HTF, inline = "ht1Prev", display = display.none)
+ht2Color = input.color(#9bd1bf, "颜色", group = HTF, inline = "ht2", display = display.none)
+ht2Tf = input.string(MONTH_TF, "周期", group = HTF, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "ht2", display = display.none)
+ht2O = input.bool(false, "开", group = HTF, inline = "ht2", display = display.none)
+ht2H = input.bool(false, "高", group = HTF, inline = "ht2", display = display.none)
+ht2L = input.bool(false, "低", group = HTF, inline = "ht2", display = display.none)
+ht2M = input.bool(false, "中", group = HTF, inline = "ht2", display = display.none)
+// 3 组上期设置
+ht2PrevO = input.bool(false, "上期 开", group = HTF, inline = "ht2Prev", display = display.none)
+ht2PrevH = input.bool(false, "高", group = HTF, inline = "ht2Prev", display = display.none)
+ht2PrevL = input.bool(false, "低", group = HTF, inline = "ht2Prev", display = display.none)
+ht2PrevM = input.bool(false, "中", group = HTF, inline = "ht2Prev", display = display.none)
+ht3Color = input.color(#c2a8e6, "颜色", group = HTF, inline = "ht3", display = display.none)
+ht3Tf = input.string(QUARTER_TF, "周期", group = HTF, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "ht3", display = display.none)
+ht3O = input.bool(false, "开", group = HTF, inline = "ht3", display = display.none)
+ht3H = input.bool(false, "高", group = HTF, inline = "ht3", display = display.none)
+ht3L = input.bool(false, "低", group = HTF, inline = "ht3", display = display.none)
+ht3M = input.bool(false, "中", group = HTF, inline = "ht3", display = display.none)
+// 4 组上期设置
+ht3PrevO = input.bool(false, "上期 开", group = HTF, inline = "ht3Prev", display = display.none)
+ht3PrevH = input.bool(false, "高", group = HTF, inline = "ht3Prev", display = display.none)
+ht3PrevL = input.bool(false, "低", group = HTF, inline = "ht3Prev", display = display.none)
+ht3PrevM = input.bool(false, "中", group = HTF, inline = "ht3Prev", display = display.none)
+vw0Color = input.color(#d4d8e2, "颜色", group = VWAP, inline = "vw0", display = display.none)
+vw0Tf = input.string(DAY_TF, "周期", group = VWAP, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "vw0", display = display.none)
+vw0Vwap = input.bool(false, "均价", group = VWAP, inline = "vw0", display = display.none)
+vw0Sd = input.bool(false, "标准差", group = VWAP, inline = "vw0", display = display.none)
+// 1 组上期设置
+vw0PrevVwap = input.bool(false, "上期 均价", group = VWAP, inline = "vw0Prev", display = display.none)
+vw0PrevSd = input.bool(false, "标准差", group = VWAP, inline = "vw0Prev", display = display.none)
+vw1Color = input.color(#f0cdb0, "颜色", group = VWAP, inline = "vw1", display = display.none)
+vw1Tf = input.string(WEEK_TF, "周期", group = VWAP, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "vw1", display = display.none)
+vw1Vwap = input.bool(false, "均价", group = VWAP, inline = "vw1", display = display.none)
+vw1Sd = input.bool(false, "标准差", group = VWAP, inline = "vw1", display = display.none)
+// 2 组上期设置
+vw1PrevVwap = input.bool(false, "上期 均价", group = VWAP, inline = "vw1Prev", display = display.none)
+vw1PrevSd = input.bool(false, "标准差", group = VWAP, inline = "vw1Prev", display = display.none)
+vw2Color = input.color(#abd29e, "颜色", group = VWAP, inline = "vw2", display = display.none)
+vw2Tf = input.string(MONTH_TF, "周期", group = VWAP, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "vw2", display = display.none)
+vw2Vwap = input.bool(false, "均价", group = VWAP, inline = "vw2", display = display.none)
+vw2Sd = input.bool(false, "标准差", group = VWAP, inline = "vw2", display = display.none)
+// 3 组上期设置
+vw2PrevVwap = input.bool(false, "上期 均价", group = VWAP, inline = "vw2Prev", display = display.none)
+vw2PrevSd = input.bool(false, "标准差", group = VWAP, inline = "vw2Prev", display = display.none)
+ma0Color = input.color(#f5e5a4, "颜色", group = MA, inline = "ma0", display = display.none)
+ma0Len = input.int(50, "长度", group = MA, minval = 1, maxval = 5000, inline = "ma0", display = display.none)
+ma0Sma = input.bool(false, "简单均线", group = MA, inline = "ma0", display = display.none)
+ma0Ema = input.bool(false, "指数均线", group = MA, inline = "ma0", display = display.none)
+ma1Color = input.color(#f4b9b8, "颜色", group = MA, inline = "ma1", display = display.none)
+ma1Len = input.int(100, "长度", group = MA, minval = 1, maxval = 5000, inline = "ma1", display = display.none)
+ma1Sma = input.bool(false, "简单均线", group = MA, inline = "ma1", display = display.none)
+ma1Ema = input.bool(false, "指数均线", group = MA, inline = "ma1", display = display.none)
+ma2Color = input.color(#a8dcf8, "颜色", group = MA, inline = "ma2", display = display.none)
+ma2Len = input.int(200, "长度", group = MA, minval = 1, maxval = 5000, inline = "ma2", display = display.none)
+ma2Sma = input.bool(false, "简单均线", group = MA, inline = "ma2", display = display.none)
+ma2Ema = input.bool(false, "指数均线", group = MA, inline = "ma2", display = display.none)
+ss0Color = input.color(#eabacf, "颜色", group = SESSION, inline = "ss0", display = display.none)
+ss0Hours = input.session("0900-1500", "时段", group = SESSION, inline = "ss0", display = display.none)
+ss0O = input.bool(false, "开", group = SESSION, inline = "ss0", display = display.none)
+ss0H = input.bool(false, "高", group = SESSION, inline = "ss0", display = display.none)
+ss0L = input.bool(false, "低", group = SESSION, inline = "ss0", display = display.none)
+ss0M = input.bool(false, "中", group = SESSION, inline = "ss0", display = display.none)
+// 1 组上期设置
+ss0PrevO = input.bool(false, "上期 开", group = SESSION, inline = "ss0Prev", display = display.none)
+ss0PrevH = input.bool(false, "高", group = SESSION, inline = "ss0Prev", display = display.none)
+ss0PrevL = input.bool(false, "低", group = SESSION, inline = "ss0Prev", display = display.none)
+ss0PrevM = input.bool(false, "中", group = SESSION, inline = "ss0Prev", display = display.none)
+ss1Color = input.color(#bacdf2, "颜色", group = SESSION, inline = "ss1", display = display.none)
+ss1Hours = input.session("0800-1700", "时段", group = SESSION, inline = "ss1", display = display.none)
+ss1O = input.bool(false, "开", group = SESSION, inline = "ss1", display = display.none)
+ss1H = input.bool(false, "高", group = SESSION, inline = "ss1", display = display.none)
+ss1L = input.bool(false, "低", group = SESSION, inline = "ss1", display = display.none)
+ss1M = input.bool(false, "中", group = SESSION, inline = "ss1", display = display.none)
+// 2 组上期设置
+ss1PrevO = input.bool(false, "上期 开", group = SESSION, inline = "ss1Prev", display = display.none)
+ss1PrevH = input.bool(false, "高", group = SESSION, inline = "ss1Prev", display = display.none)
+ss1PrevL = input.bool(false, "低", group = SESSION, inline = "ss1Prev", display = display.none)
+ss1PrevM = input.bool(false, "中", group = SESSION, inline = "ss1Prev", display = display.none)
+ss2Color = input.color(#bce2d5, "颜色", group = SESSION, inline = "ss2", display = display.none)
+ss2Hours = input.session("0930-1600", "时段", group = SESSION, inline = "ss2", display = display.none)
+ss2O = input.bool(false, "开", group = SESSION, inline = "ss2", display = display.none)
+ss2H = input.bool(false, "高", group = SESSION, inline = "ss2", display = display.none)
+ss2L = input.bool(false, "低", group = SESSION, inline = "ss2", display = display.none)
+ss2M = input.bool(false, "中", group = SESSION, inline = "ss2", display = display.none)
+// 3 组上期设置
+ss2PrevO = input.bool(false, "上期 开", group = SESSION, inline = "ss2Prev", display = display.none)
+ss2PrevH = input.bool(false, "高", group = SESSION, inline = "ss2Prev", display = display.none)
+ss2PrevL = input.bool(false, "低", group = SESSION, inline = "ss2Prev", display = display.none)
+ss2PrevM = input.bool(false, "中", group = SESSION, inline = "ss2Prev", display = display.none)
+vp0Color = input.color(#e0d1f7, "颜色", group = PROFILE, inline = "vp0", display = display.none)
+vp0Tf = input.string(DAY_TF, "周期", group = PROFILE, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "vp0", display = display.none)
+vp0Poc = input.bool(false, "POC", group = PROFILE, inline = "vp0", display = display.none)
+vp0Va = input.bool(false, "价值区", group = PROFILE, inline = "vp0", display = display.none)
+// 1 组上期设置
+vp0PrevPoc = input.bool(false, "上期 POC", group = PROFILE, inline = "vp0Prev", display = display.none)
+vp0PrevVa = input.bool(false, "价值区", group = PROFILE, inline = "vp0Prev", display = display.none)
+vp1Color = input.color(#f4d5ab, "颜色", group = PROFILE, inline = "vp1", display = display.none)
+vp1Tf = input.string(WEEK_TF, "周期", group = PROFILE, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "vp1", display = display.none)
+vp1Poc = input.bool(false, "POC", group = PROFILE, inline = "vp1", display = display.none)
+vp1Va = input.bool(false, "价值区", group = PROFILE, inline = "vp1", display = display.none)
+// 2 组上期设置
+vp1PrevPoc = input.bool(false, "上期 POC", group = PROFILE, inline = "vp1Prev", display = display.none)
+vp1PrevVa = input.bool(false, "价值区", group = PROFILE, inline = "vp1Prev", display = display.none)
+vp2Color = input.color(#cadecf, "颜色", group = PROFILE, inline = "vp2", display = display.none)
+vp2Tf = input.string(MONTH_TF, "周期", group = PROFILE, options = [FOUR_H, DAY_TF, WEEK_TF, MONTH_TF, QUARTER_TF, YEAR_TF], inline = "vp2", display = display.none)
+vp2Poc = input.bool(false, "POC", group = PROFILE, inline = "vp2", display = display.none)
+vp2Va = input.bool(false, "价值区", group = PROFILE, inline = "vp2", display = display.none)
+// 3 组上期设置
+vp2PrevPoc = input.bool(false, "上期 POC", group = PROFILE, inline = "vp2Prev", display = display.none)
+vp2PrevVa = input.bool(false, "价值区", group = PROFILE, inline = "vp2Prev", display = display.none)
+dy0Color = input.color(#bfd7b6, "颜色", group = DAY, inline = "dy0", display = display.none)
+dy0Day = input.string("星期一", "星期", group = DAY, options = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"], inline = "dy0", display = display.none)
+dy0O = input.bool(false, "开", group = DAY, inline = "dy0", display = display.none)
+dy0H = input.bool(false, "高", group = DAY, inline = "dy0", display = display.none)
+dy0L = input.bool(false, "低", group = DAY, inline = "dy0", display = display.none)
+dy0M = input.bool(false, "中", group = DAY, inline = "dy0", display = display.none)
+dy1Color = input.color(#edc2b3, "颜色", group = DAY, inline = "dy1", display = display.none)
+dy1Day = input.string("星期二", "星期", group = DAY, options = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"], inline = "dy1", display = display.none)
+dy1O = input.bool(false, "开", group = DAY, inline = "dy1", display = display.none)
+dy1H = input.bool(false, "高", group = DAY, inline = "dy1", display = display.none)
+dy1L = input.bool(false, "低", group = DAY, inline = "dy1", display = display.none)
+dy1M = input.bool(false, "中", group = DAY, inline = "dy1", display = display.none)
+dy2Color = input.color(#c4b2d5, "颜色", group = DAY, inline = "dy2", display = display.none)
+dy2Day = input.string("星期三", "星期", group = DAY, options = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"], inline = "dy2", display = display.none)
+dy2O = input.bool(false, "开", group = DAY, inline = "dy2", display = display.none)
+dy2H = input.bool(false, "高", group = DAY, inline = "dy2", display = display.none)
+dy2L = input.bool(false, "低", group = DAY, inline = "dy2", display = display.none)
+dy2M = input.bool(false, "中", group = DAY, inline = "dy2", display = display.none)
+showName = input.bool(true, "名称", group = STYLE, inline = "标签", display = display.none)
+showPrice = input.bool(true, "价格", group = STYLE, inline = "标签", display = display.none)
+showDistance = input.bool(true, "百分比距离", group = STYLE, inline = "标签", display = display.none)
+lineType = input.string("常规", "线位类型", group = STYLE, options = ["常规", "向左延伸", "向右延伸", "双向延伸"], display = display.none)
+lineStyle = input.string("实线", "线型", group = STYLE, options = ["实线", "虚线", "点线"], display = display.none)
+fontStyle = input.string("默认", "字体", group = STYLE, options = ["默认", "等宽"], display = display.none)
+labelSize = input.string("标准", "标签大小", group = STYLE, options = ["极小", "小", "标准", "大", "特大"], display = display.none)
+lineWidth = input.int(1, "线宽", group = STYLE, minval = 1, maxval = 5, display = display.none)
+offsetRight = input.int(35, "向右偏移", group = STYLE, minval = 1, maxval = 495, display = display.none)
+offsetLeft = input.int(5, "向左偏移", group = STYLE, minval = 0, maxval = 5000, display = display.none)
+overlapPct = input.float(0, "合并容差（%）", group = STYLE, minval = 0, maxval = 100, display = display.none)
+mergeLevels = input.bool(true, "合并重叠价位", group = STYLE, inline = "合并", display = display.none)
+mergeColor = input.color(#797d8b, "颜色", group = STYLE, inline = "合并", display = display.none)
+overrideColors = input.bool(false, "统一颜色", group = STYLE, inline = "统一", display = display.none)
+overrideColor = input.color(#797d8b, "颜色", group = STYLE, inline = "统一", display = display.none)
+profileRows = input.int(50, "分布行数", group = OTHER, minval = 5, maxval = 150, display = display.none)
+valueArea = input.float(70, "价值区百分比", group = OTHER, minval = 1, maxval = 100, display = display.none)
+tz0 = input.string("Asia/Tokyo", "时段 1 时区", group = OTHER, display = display.none)
+tz1 = input.string("Europe/London", "时段 2 时区", group = OTHER, display = display.none)
+tz2 = input.string("America/New_York", "时段 3 时区", group = OTHER, display = display.none)
+fastProfile = input.bool(false, "优化成交量分布", group = OTHER, tooltip = "开启后只使用每周期最近 1500 根图表 K 线；关闭时上限为 6000 根。", display = display.none)
+prevTag = input.string("p", "上期", group = LABELS, display = display.none)
+openTag = input.string("O", "开盘", group = LABELS, display = display.none)
+highTag = input.string("H", "最高", group = LABELS, display = display.none)
+lowTag = input.string("L", "最低", group = LABELS, display = display.none)
+midTag = input.string("EQ", "中点", group = LABELS, display = display.none)
+fourTag = input.string("4h", "4 小时", group = LABELS, display = display.none)
+dayTag = input.string("d", "日线", group = LABELS, display = display.none)
+weekTag = input.string("w", "周线", group = LABELS, display = display.none)
+monthTag = input.string("m", "月线", group = LABELS, display = display.none)
+quarterTag = input.string("q", "季线", group = LABELS, display = display.none)
+yearTag = input.string("y", "年线", group = LABELS, display = display.none)
+ss0Tag = input.string("Tokyo", "时段 1", group = LABELS, display = display.none)
+ss1Tag = input.string("London", "时段 2", group = LABELS, display = display.none)
+ss2Tag = input.string("NY", "时段 3", group = LABELS, display = display.none)
+vwapTag = input.string("VWAP", "成交量加权均价", group = LABELS, display = display.none)
+dyTag0 = input.string("mon", "星期一", group = LABELS, display = display.none)
+dyTag1 = input.string("tue", "星期二", group = LABELS, display = display.none)
+dyTag2 = input.string("wed", "星期三", group = LABELS, display = display.none)
+dyTag3 = input.string("thu", "星期四", group = LABELS, display = display.none)
+dyTag4 = input.string("fri", "星期五", group = LABELS, display = display.none)
+dyTag5 = input.string("sat", "星期六", group = LABELS, display = display.none)
+dyTag6 = input.string("sun", "星期日", group = LABELS, display = display.none)
+
+periodCode(string choice) =>
+    switch choice
+        FOUR_H => "240"
+        DAY_TF => "1D"
+        WEEK_TF => "1W"
+        MONTH_TF => "1M"
+        QUARTER_TF => "3M"
+        => "12M"
+
+periodTag(string choice) =>
+    switch choice
+        FOUR_H => fourTag
+        DAY_TF => dayTag
+        WEEK_TF => weekTag
+        MONTH_TF => monthTag
+        QUARTER_TF => quarterTag
+        => yearTag
+
+dayNumber(string choice) =>
+    switch choice
+        "星期一" => dayofweek.monday
+        "星期二" => dayofweek.tuesday
+        "星期三" => dayofweek.wednesday
+        "星期四" => dayofweek.thursday
+        "星期五" => dayofweek.friday
+        "星期六" => dayofweek.saturday
+        => dayofweek.sunday
+
+dayName(int number) =>
+    switch number
+        dayofweek.monday => dyTag0
+        dayofweek.tuesday => dyTag1
+        dayofweek.wednesday => dyTag2
+        dayofweek.thursday => dyTag3
+        dayofweek.friday => dyTag4
+        dayofweek.saturday => dyTag5
+        => dyTag6
+
+type Level
+    float price
+    string title
+    color shade
+    int start
+
+var array<Level> levels = array.new<Level>()
+var array<line> drawnLines = array.new<line>()
+var array<label> drawnLabels = array.new<label>()
+
+emitLevel(bool enabled, float price, string title, color shade, int origin) =>
+    if barstate.islast and enabled and not na(price)
+        bool merged = false
+        if mergeLevels and array.size(levels) > 0
+            for item in levels
+                float tolerance = math.abs(item.price) * overlapPct / 100
+                if math.abs(item.price - price) <= tolerance
+                    item.title := item.title + " / " + title
+                    item.shade := mergeColor
+                    item.start := math.min(item.start, origin)
+                    merged := true
+                    break
+        if not merged
+            array.push(levels, Level.new(price, title, shade, origin))
+    0
+
+emitRange(bool useOpen, bool useHigh, bool useLow, bool useMid, float o, float h, float l, string prefix, color shade, int origin) =>
+    emitLevel(useOpen, o, prefix + openTag, shade, origin)
+    emitLevel(useHigh, h, prefix + highTag, shade, origin)
+    emitLevel(useLow, l, prefix + lowTag, shade, origin)
+    emitLevel(useMid, (h + l) / 2, prefix + midTag, shade, origin)
+
+higherLevels(string choice, color shade, bool co, bool ch, bool cl, bool cm, bool po, bool ph, bool pl, bool pm) =>
+    string tf = periodCode(choice)
+    if enableHTF and (co or ch or cl or cm or po or ph or pl or pm) and timeframe.in_seconds(tf) >= timeframe.in_seconds()
+        [o, priorO, priorH, priorL] = request.security(syminfo.tickerid, tf, [open, open[1], high[1], low[1]], lookahead = barmerge.lookahead_on)
+        bool reset = timeframe.change(tf)
+        var float runningHigh = na
+        var float runningLow = na
+        var int origin = bar_index
+        var int priorOrigin = bar_index
+        if reset or na(runningHigh)
+            priorOrigin := origin
+            origin := bar_index
+            runningHigh := high
+            runningLow := low
+        else
+            runningHigh := math.max(runningHigh, high)
+            runningLow := math.min(runningLow, low)
+        emitRange(co, ch, cl, cm, o, runningHigh, runningLow, periodTag(choice), shade, origin)
+        emitRange(po, ph, pl, pm, priorO, priorH, priorL, prevTag + periodTag(choice), shade, priorOrigin)
+    0
+
+emitVwap(bool meanOn, bool deviationOn, float mean, float sd, string prefix, color shade, int origin) =>
+    emitLevel(meanOn, mean, prefix + vwapTag, shade, origin)
+    emitLevel(deviationOn, mean + sd, prefix + vwapTag + "+1σ", shade, origin)
+    emitLevel(deviationOn, mean - sd, prefix + vwapTag + "−1σ", shade, origin)
+
+vwapLevels(string choice, color shade, bool cv, bool cs, bool pv, bool ps) =>
+    string tf = periodCode(choice)
+    if enableVWAP and (cv or cs or pv or ps) and timeframe.in_seconds(tf) >= timeframe.in_seconds()
+        bool reset = timeframe.change(tf)
+        [mean, upper, lower] = ta.vwap(hlc3, reset or barstate.isfirst, 1)
+        var float priorMean = na
+        var float priorSd = na
+        var int origin = bar_index
+        var int priorOrigin = bar_index
+        if reset
+            priorMean := mean[1]
+            priorSd := upper[1] - mean[1]
+            priorOrigin := origin
+            origin := bar_index
+        emitVwap(cv, cs, mean, upper - mean, periodTag(choice), shade, origin)
+        emitVwap(pv, ps, priorMean, priorSd, prevTag + periodTag(choice), shade, priorOrigin)
+    0
+
+averageLevels(int length, color shade, bool simpleOn, bool exponentialOn) =>
+    float simple = ta.sma(close, length)
+    float exponential = ta.ema(close, length)
+    emitLevel(enableMA and simpleOn, simple, str.tostring(length) + " SMA", shade, bar_index - offsetLeft)
+    emitLevel(enableMA and exponentialOn, exponential, str.tostring(length) + " EMA", shade, bar_index - offsetLeft)
+
+sessionLevels(string hours, string zone, string prefix, color shade, bool co, bool ch, bool cl, bool cm, bool po, bool ph, bool pl, bool pm) =>
+    if enableSESSION and timeframe.isintraday and (co or ch or cl or cm or po or ph or pl or pm)
+        bool inside = not na(time(timeframe.period, hours + ":1234567", zone))
+        int sessionStart = time("1D", hours + ":1234567", zone)
+        bool begins = inside and (not inside[1] or sessionStart != sessionStart[1])
+        var float so = na
+        var float sh = na
+        var float sl = na
+        var float priorO = na
+        var float priorH = na
+        var float priorL = na
+        var int origin = bar_index
+        var int priorOrigin = bar_index
+        if begins
+            priorO := so
+            priorH := sh
+            priorL := sl
+            priorOrigin := origin
+            so := open
+            sh := high
+            sl := low
+            origin := bar_index
+        else if inside
+            sh := math.max(sh, high)
+            sl := math.min(sl, low)
+        emitRange(co, ch, cl, cm, so, sh, sl, prefix, shade, origin)
+        emitRange(po, ph, pl, pm, priorO, priorH, priorL, prevTag + prefix, shade, priorOrigin)
+    0
+
+dayLevels(string choice, color shade, bool co, bool ch, bool cl, bool cm) =>
+    if enableDAY and timeframe.in_seconds() <= timeframe.in_seconds("1D") and (co or ch or cl or cm)
+        int number = dayNumber(choice)
+        int sessionDay = dayofweek(time_tradingday, "UTC")
+        var float so = na
+        var float sh = na
+        var float sl = na
+        var int origin = bar_index
+        if sessionDay == number
+            if time_tradingday != time_tradingday[1] or na(so)
+                so := open
+                sh := high
+                sl := low
+                origin := bar_index
+            else
+                sh := math.max(sh, high)
+                sl := math.min(sl, low)
+        emitRange(co, ch, cl, cm, so, sh, sl, dayName(number), shade, origin)
+    0
+
+// 将每根 K 线成交量分配到其典型价格对应的区间，再从 POC 向两侧扩展价值区。
+profile(array<float> prices, array<float> volumes) =>
+    float poc = na
+    float vah = na
+    float val = na
+    if array.size(prices) > 0
+        float lowPrice = array.min(prices)
+        float highPrice = array.max(prices)
+        float step = (highPrice - lowPrice) / profileRows
+        if step == 0
+            poc := lowPrice
+            vah := lowPrice
+            val := lowPrice
+        else
+            array<float> bins = array.new_float(profileRows, 0)
+            for [i, price] in prices
+                int index = math.min(profileRows - 1, int(math.floor((price - lowPrice) / step)))
+                array.set(bins, index, array.get(bins, index) + array.get(volumes, i))
+            int center = array.indexof(bins, array.max(bins))
+            int left = center
+            int right = center
+            float covered = array.get(bins, center)
+            float target = array.sum(bins) * valueArea / 100
+            while covered < target and (left > 0 or right < profileRows - 1)
+                float below = left > 0 ? array.get(bins, left - 1) : -1
+                float above = right < profileRows - 1 ? array.get(bins, right + 1) : -1
+                if above > below
+                    right += 1
+                    covered += above
+                else
+                    left -= 1
+                    covered += below
+            poc := lowPrice + (center + 0.5) * step
+            vah := lowPrice + (right + 1) * step
+            val := lowPrice + left * step
+    [poc, vah, val]
+
+emitProfile(bool pocOn, bool vaOn, float poc, float vah, float val, string prefix, color shade, int origin) =>
+    emitLevel(pocOn, poc, prefix + "POC", shade, origin)
+    emitLevel(vaOn, vah, prefix + "VAH", shade, origin)
+    emitLevel(vaOn, val, prefix + "VAL", shade, origin)
+
+profileLevels(string choice, color shade, bool cp, bool ca, bool pp, bool pa) =>
+    string tf = periodCode(choice)
+    if enablePROFILE and (cp or ca or pp or pa) and timeframe.in_seconds(tf) >= timeframe.in_seconds()
+        var array<float> prices = array.new_float()
+        var array<float> volumes = array.new_float()
+        var int origin = bar_index
+        var int priorOrigin = bar_index
+        var float priorPoc = na
+        var float priorVah = na
+        var float priorVal = na
+        if timeframe.change(tf)
+            if pp or pa
+                [poc, vah, val] = profile(prices, volumes)
+                priorPoc := poc
+                priorVah := vah
+                priorVal := val
+            array.clear(prices)
+            array.clear(volumes)
+            priorOrigin := origin
+            origin := bar_index
+        int capacity = fastProfile ? 1500 : 6000
+        if not na(volume) and volume > 0
+            if array.size(prices) >= capacity
+                array.shift(prices)
+                array.shift(volumes)
+            array.push(prices, hlc3)
+            array.push(volumes, volume)
+        if barstate.islast
+            if cp or ca
+                [poc, vah, val] = profile(prices, volumes)
+                emitProfile(cp, ca, poc, vah, val, periodTag(choice), shade, origin)
+            emitProfile(pp, pa, priorPoc, priorVah, priorVal, prevTag + periodTag(choice), shade, priorOrigin)
+    0
+
+if barstate.islast
+    array.clear(levels)
+
+higherLevels(ht0Tf, ht0Color, ht0O, ht0H, ht0L, ht0M, ht0PrevO, ht0PrevH, ht0PrevL, ht0PrevM)
+higherLevels(ht1Tf, ht1Color, ht1O, ht1H, ht1L, ht1M, ht1PrevO, ht1PrevH, ht1PrevL, ht1PrevM)
+higherLevels(ht2Tf, ht2Color, ht2O, ht2H, ht2L, ht2M, ht2PrevO, ht2PrevH, ht2PrevL, ht2PrevM)
+higherLevels(ht3Tf, ht3Color, ht3O, ht3H, ht3L, ht3M, ht3PrevO, ht3PrevH, ht3PrevL, ht3PrevM)
+vwapLevels(vw0Tf, vw0Color, vw0Vwap, vw0Sd, vw0PrevVwap, vw0PrevSd)
+vwapLevels(vw1Tf, vw1Color, vw1Vwap, vw1Sd, vw1PrevVwap, vw1PrevSd)
+vwapLevels(vw2Tf, vw2Color, vw2Vwap, vw2Sd, vw2PrevVwap, vw2PrevSd)
+averageLevels(ma0Len, ma0Color, ma0Sma, ma0Ema)
+averageLevels(ma1Len, ma1Color, ma1Sma, ma1Ema)
+averageLevels(ma2Len, ma2Color, ma2Sma, ma2Ema)
+sessionLevels(ss0Hours, tz0, ss0Tag, ss0Color, ss0O, ss0H, ss0L, ss0M, ss0PrevO, ss0PrevH, ss0PrevL, ss0PrevM)
+sessionLevels(ss1Hours, tz1, ss1Tag, ss1Color, ss1O, ss1H, ss1L, ss1M, ss1PrevO, ss1PrevH, ss1PrevL, ss1PrevM)
+sessionLevels(ss2Hours, tz2, ss2Tag, ss2Color, ss2O, ss2H, ss2L, ss2M, ss2PrevO, ss2PrevH, ss2PrevL, ss2PrevM)
+profileLevels(vp0Tf, vp0Color, vp0Poc, vp0Va, vp0PrevPoc, vp0PrevVa)
+profileLevels(vp1Tf, vp1Color, vp1Poc, vp1Va, vp1PrevPoc, vp1PrevVa)
+profileLevels(vp2Tf, vp2Color, vp2Poc, vp2Va, vp2PrevPoc, vp2PrevVa)
+dayLevels(dy0Day, dy0Color, dy0O, dy0H, dy0L, dy0M)
+dayLevels(dy1Day, dy1Color, dy1O, dy1H, dy1L, dy1M)
+dayLevels(dy2Day, dy2Color, dy2O, dy2H, dy2L, dy2M)
+
+if barstate.islast
+    for oldLine in drawnLines
+        line.delete(oldLine)
+    for oldLabel in drawnLabels
+        label.delete(oldLabel)
+    array.clear(drawnLines)
+    array.clear(drawnLabels)
+    string style = lineStyle == "虚线" ? line.style_dashed : lineStyle == "点线" ? line.style_dotted : line.style_solid
+    string extension = switch lineType
+        "向左延伸" => extend.left
+        "向右延伸" => extend.right
+        "双向延伸" => extend.both
+        => extend.none
+    string labelFont = fontStyle == "等宽" ? font.family_monospace : font.family_default
+    string textSize = switch labelSize
+        "极小" => size.tiny
+        "小" => size.small
+        "大" => size.large
+        "特大" => size.huge
+        => size.normal
+    int end = bar_index + offsetRight
+    for item in levels
+        color shade = overrideColors ? overrideColor : item.shade
+        int start = math.max(0, bar_index - 9999, item.start - offsetLeft)
+        array.push(drawnLines, line.new(start, item.price, end, item.price, extend = extension, color = shade, style = style, width = lineWidth))
+        string caption = showName ? item.title : ""
+        if showPrice
+            caption += (caption == "" ? "" : " · ") + str.tostring(item.price, format.mintick)
+        if showDistance and close != 0
+            caption += (caption == "" ? "" : " · ") + str.tostring((item.price - close) / close * 100, "0.00") + "%"
+        if caption != ""
+            array.push(drawnLabels, label.new(end + 2, item.price, caption, style = label.style_label_left, color = color.new(shade, 100), textcolor = shade, size = textSize, text_font_family = labelFont))
