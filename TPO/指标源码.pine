@@ -177,7 +177,7 @@ draw_tpo_profile(float[] arr_h, float[] arr_l, int start_t, int end_t, bool is_l
                         else
                             manage_box_limit(b)
                             if extend_singles
-                                box.set_extend(b, extend.right)
+                                box.set_extend(b, extend.none)
                                 array.push(active_sp_boxes, b)
                     run_start_idx := -1 
     
