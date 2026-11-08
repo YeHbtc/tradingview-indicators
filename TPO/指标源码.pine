@@ -27,6 +27,8 @@ show_singles = input.bool(true, 'Single Prints', inline = 'sp', group = grp_sp, 
 extend_singles = input.bool(true, '延长', inline = 'sp', group = grp_sp, display = display.none)
 singles_color = input.color(color.new(#8040FF, 60), '', inline = 'sp', group = grp_sp, display = display.none)
 
+sp_visible_only = input.bool(true, '仅显示可见范围', group = grp_sp, display = display.none)
+
 grp_style = '轮廓样式'
 calc_va = input.bool(true, '计算价值区域', group = grp_style, display = display.none)
 show_va_bg = input.bool(true, '价值区高亮', inline='fill', group = grp_style, display = display.none)
@@ -49,21 +51,40 @@ get_line_style(style_str) =>
         '点线' => line.style_dotted
         => line.style_dashed
 
-// 矩形管理
-var box[] active_sp_boxes = array.new<box>() // 已确认且尚未触碰的区间
-var box[] global_boxes = array.new<box>()       // 历史矩形
+// 区间原始数据独立于绘图，裁剪不会改变触碰判断。
+type SinglePrintZone
+    int leftTime
+    int rightTime
+    float top
+    float bottom
+    bool active
+
+var array<SinglePrintZone> sp_history = array.new<SinglePrintZone>()
+var array<SinglePrintZone> sp_preview = array.new<SinglePrintZone>()
+var box[] sp_drawings = array.new<box>()
 var polyline[] all_profiles = array.new<polyline>()
 var polyline[] live_profiles = array.new<polyline>()
-var box[] live_sp_boxes = array.new<box>()      // 实时矩形（下次更新时删除）
 
-manage_box_limit(box new_box) =>
-    array.push(global_boxes, new_box)
-    if array.size(global_boxes) > 240
-        box old_box = array.shift(global_boxes)
-        int active_idx = array.indexof(active_sp_boxes, old_box)
-        if active_idx >= 0
-            array.remove(active_sp_boxes, active_idx)
-        box.delete(old_box)
+// 使用可见K线时间边界，不读取或依赖价格轴范围，避免自动缩放反馈。
+var float visible_high = na
+var float visible_low = na
+if time >= chart.left_visible_bar_time and time <= chart.right_visible_bar_time
+    visible_high := na(visible_high) ? high : math.max(visible_high, high)
+    visible_low := na(visible_low) ? low : math.min(visible_low, low)
+
+advance_sp(SinglePrintZone zone, float bar_high, float bar_low, int bar_time) =>
+    if zone.active
+        zone.rightTime := bar_time
+        if bar_high >= zone.bottom and bar_low <= zone.top
+            zone.active := false
+
+render_sp(SinglePrintZone zone) =>
+    float draw_top = sp_visible_only ? math.min(zone.top, visible_high) : zone.top
+    float draw_bottom = sp_visible_only ? math.max(zone.bottom, visible_low) : zone.bottom
+    bool in_time = not sp_visible_only or (zone.rightTime >= chart.left_visible_bar_time and zone.leftTime <= chart.right_visible_bar_time)
+    if in_time and not na(draw_top) and not na(draw_bottom) and draw_top > draw_bottom and zone.rightTime > zone.leftTime
+        box drawing = box.new(zone.leftTime, draw_top, zone.rightTime, draw_bottom, xloc=xloc.bar_time, border_width=0, bgcolor=singles_color)
+        array.push(sp_drawings, drawing)
 
 // ----------------------------------------------------------------------
 // 状态变量
@@ -143,6 +164,7 @@ draw_tpo_profile(float[] arr_h, float[] arr_l, int start_t, int end_t, bool is_l
     if max_time_score > 0
         time_per_score := (period_duration * (width_percentage / 100.0)) / max_time_score
     
+    bool[] single_rows = array.new_bool(bars_nb, false)
     // --- 单印区间及延长逻辑 ---
     if show_singles
         int run_start_idx = -1
@@ -170,15 +192,15 @@ draw_tpo_profile(float[] arr_h, float[] arr_l, int start_t, int end_t, bool is_l
                         float b_top = h_range - (run_start_idx * box_height)
                         float b_bot = h_range - (i * box_height)
                         
-                        box b = box.new(start_t + sp_width_time, b_top, box_right_time, b_bot, xloc = xloc.bar_time, border_width = 0, bgcolor = singles_color)
-                        
+                        for row = run_start_idx to i - 1
+                            array.set(single_rows, row, true)
+                        SinglePrintZone zone = SinglePrintZone.new(start_t, box_right_time, b_top, b_bot, not is_live and extend_singles)
                         if is_live
-                            array.push(live_sp_boxes, b)
+                            array.push(sp_preview, zone)
                         else
-                            manage_box_limit(b)
-                            if extend_singles
-                                box.set_extend(b, extend.none)
-                                array.push(active_sp_boxes, b)
+                            array.push(sp_history, zone)
+                            if array.size(sp_history) > 240
+                                array.shift(sp_history)
                     run_start_idx := -1 
     
     // 直接给轮廓分段着色，价值区不会变成覆盖整段K线的矩形。
@@ -189,19 +211,10 @@ draw_tpo_profile(float[] arr_h, float[] arr_l, int start_t, int end_t, bool is_l
         float top = h_range - i * box_height
         float bottom = top - box_height
         bool in_va = calc_va and show_va_bg and top <= vah_price + box_height * 0.001 and bottom >= val_price - box_height * 0.001
-        bool single = show_singles and array.get(row_scores, i) == 1
-        // 只有中间的单印段着色，排除轮廓两端尾部。
-        bool above_multi = false
-        bool below_multi = false
-        if single
-            if i > 0
-                for j = 0 to i - 1
-                    above_multi := above_multi or array.get(row_scores, j) > 1
-            if i < bars_nb - 1
-                for j = i + 1 to bars_nb - 1
-                    below_multi := below_multi or array.get(row_scores, j) > 1
-        color tint = single and above_multi and below_multi ? singles_color : in_va ? va_bg_color : profile_color
-        if points.size() > 0 and (tint != run_color or array.get(row_scores, i) == 0)
+        // 单印行由独立矩形绘制，避免未裁剪的紫色折线影响缩放。
+        bool skip_row = array.get(row_scores, i) == 0 or array.get(single_rows, i)
+        color tint = in_va ? va_bg_color : profile_color
+        if points.size() > 0 and (tint != run_color or skip_row)
             points.push(chart.point.from_time(start_t, top))
             polyline segment = polyline.new(points, closed=true, xloc=xloc.bar_time, line_color=run_color, fill_color=run_color)
             all_profiles.push(segment)
@@ -210,7 +223,7 @@ draw_tpo_profile(float[] arr_h, float[] arr_l, int start_t, int end_t, bool is_l
             if is_live
                 live_profiles.push(segment)
             points := array.new<chart.point>()
-        if array.get(row_scores, i) == 0
+        if skip_row
             continue
         if points.size() == 0
             points.push(chart.point.from_time(start_t, top))
@@ -270,16 +283,8 @@ if new_period and array.size(period_highs) > 0
 
 // 已结束轮廓的 Single Prints 持续延伸，后续K线含影线首次触碰即冻结。
 // 在新轮廓生成之后检查，因此新周期第一根K线也能触发停止。
-if array.size(active_sp_boxes) > 0
-    for i = array.size(active_sp_boxes) - 1 to 0
-        box zone = array.get(active_sp_boxes, i)
-        bool touched = high >= box.get_bottom(zone) and low <= box.get_top(zone)
-        if touched
-            box.set_extend(zone, extend.none)
-            box.set_right(zone, time)
-            array.remove(active_sp_boxes, i)
-        else
-            box.set_right(zone, time)
+for zone in sp_history
+    advance_sp(zone, high, low, time)
 
 array.push(period_highs, high)
 array.push(period_lows, low)
@@ -332,10 +337,10 @@ if barstate.islast
         for l in current_ib_lines
             line.delete(l)
         array.clear(current_ib_lines)
-    if array.size(live_sp_boxes) > 0
-        for b in live_sp_boxes
-            box.delete(b)
-        array.clear(live_sp_boxes)
+    for drawing in sp_drawings
+        box.delete(drawing)
+    array.clear(sp_drawings)
+    array.clear(sp_preview)
 
     [poc, vah, val] = draw_tpo_profile(period_highs, period_lows, period_start_time, time, true)
     
@@ -348,3 +353,10 @@ if barstate.islast
     if show_ib
         int proj_end = time + timeframe.in_seconds(timeframe.period)*1000
         current_ib_lines := draw_ib_lines(period_start_time, proj_end, current_ib_high, current_ib_low)
+
+// 只有完整可见窗口价格范围已计算后才创建 Single Prints 绘图。
+if barstate.islast and show_singles
+    for zone in sp_history
+        render_sp(zone)
+    for zone in sp_preview
+        render_sp(zone)
