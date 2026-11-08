@@ -15,17 +15,17 @@ va_percentage = input.float(70.0, '价值区域占比（%）', minval = 0, maxva
 
 grp_ib = '初始平衡区间（IB）'
 show_ib = input.bool(true, 'IB', inline = 'ib', tooltip='每个轮廓开始后的前两个30分钟时间块，共1小时。', group = grp_ib, display = display.none)
-extend_ib = input.bool(false, '延长线', inline = 'ib_ext', group = grp_ib, display = display.none)
+extend_ib = input.bool(false, 'IB 延长线', inline = 'ib_ext', group = grp_ib, display = display.none)
 // IB 外观设置
-ib_color = input.color(color.new(#FFCC80, 0), '颜色', inline = 'ib', group = grp_ib, display = display.none)
-ib_line_color = input.color(color.new(#FFCC80, 40), '颜色', inline = 'ib_ext', group = grp_ib, display = display.none)
+ib_color = input.color(color.new(#FFCC80, 0), '', inline = 'ib', group = grp_ib, display = display.none)
+ib_line_color = input.color(color.new(#FFCC80, 40), '', inline = 'ib_ext', group = grp_ib, display = display.none)
 ib_width = input.int(2, '粗细', minval = 1, inline = 'ib', group = grp_ib, display = display.none)
 ib_ext_style_str = input.string('点线', '线型', options = ['实线', '虚线', '点线'], inline = 'ib_ext', group = grp_ib, display = display.none)
 
 grp_sp = '单印区间'
 show_singles = input.bool(true, '单印区间', inline = 'sp', group = grp_sp, display = display.none)
 extend_singles = input.bool(true, '延长', inline = 'sp', group = grp_sp, display = display.none)
-singles_color = input.color(color.new(#8040FF, 60), '颜色', inline = 'sp', group = grp_sp, display = display.none)
+singles_color = input.color(color.new(#8040FF, 60), '', inline = 'sp', group = grp_sp, display = display.none)
 
 grp_style = '轮廓样式'
 calc_va = input.bool(true, '计算价值区域', group = grp_style, display = display.none)
@@ -33,11 +33,11 @@ show_va_bg = input.bool(true, '价值区高亮', inline='fill', group = grp_styl
 va_bg_color = input.color(color.new(#808080, 50), '区内', inline='fill', group = grp_style, display = display.none)
 profile_color = input.color(color.new(#808080, 80), '区外', inline='fill', group = grp_style, display = display.none)
 show_poc = input.bool(true, 'POC', inline = 'poc', group = grp_style, display = display.none)
-poc_color = input.color(color.new(#39D600, 0), '颜色', inline = 'poc', group = grp_style, display = display.none)
+poc_color = input.color(color.new(#39D600, 0), '', inline = 'poc', group = grp_style, display = display.none)
+poc_style_str = input.string('实线', '线型', options = ['实线', '虚线', '点线'], inline='poc', group = grp_style, display = display.none)
 poc_width = input.int(2, '粗细', minval=1, inline='poc', group=grp_style, display = display.none)
-poc_style_str = input.string('实线', '线型', options = ['实线', '虚线', '点线'], inline='poc_style', group = grp_style, display = display.none)
 show_va_lines = input.bool(true, 'VAH / VAL', inline='va_edge', group = grp_style, display = display.none)
-va_color = input.color(color.new(#FF0000, 0), '颜色', inline='va_edge', group = grp_style, display = display.none)
+va_color = input.color(color.new(#FF0000, 0), '', inline='va_edge', group = grp_style, display = display.none)
 va_style_str = input.string('虚线', '线型', options = ['实线', '虚线', '点线'], inline='va_edge', group = grp_style, display = display.none)
 
 // ----------------------------------------------------------------------
