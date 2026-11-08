@@ -9,6 +9,7 @@
 indicator("VWAP D/W/M/Q/Y", overlay = true)
 
 const color VWAP_RED = #f23645
+const color PREVIOUS_VWAP_COLOR = #65b8c5
 
 // ---------- Functions ---------- //
 
@@ -83,8 +84,8 @@ show_plabels = input.bool(false, "上期标签", group = "窗格标签", display
 fill_pbands = input.bool(true, "填充上期区间", group = "上期区间", display = display.none)
 
 off_mult = input.int(15, "标签偏移", group = "窗格标签", display = display.none)
-bandColor1 = input.color(color.new(#9c9c9c, 56), "±1σ", group = "标准差颜色", inline = "颜色", display = display.none)
-bandColor2 = input.color(color.new(#9c9c9c, 68), "±2σ", group = "标准差颜色", inline = "颜色", display = display.none)
+bandColor1 = input.color(color.new(#9c9c9c, 30), "±1σ", group = "标准差颜色", inline = "颜色", display = display.none)
+bandColor2 = input.color(color.new(#9c9c9c, 43), "±2σ", group = "标准差颜色", inline = "颜色", display = display.none)
 bandFill = input.color(color.new(#9c9c9c, 76), "背景", group = "标准差颜色", inline = "颜色", display = display.none)
 
 var DEFAULT_LABEL_SIZE      = size.small
@@ -190,8 +191,8 @@ previouslevels(period, VWAP, s2up, s1up, s1dn, s2dn) =>
 
 // ---------- Plot previous levels ---------- //
 
-pVplot = plot(plot_pL1 ? pV : na, title = "上期 · VWAP", color = color.new(VWAP_RED, 60), style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window)
-f_drawLabel(ll_offset, show_plabels and plot_pL1 ? pV : na, "--------- pVWAP   ", VWAP_RED, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
+pVplot = plot(plot_pL1 ? pV : na, title = "上期 · VWAP", color = PREVIOUS_VWAP_COLOR, style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window)
+f_drawLabel(ll_offset, show_plabels and plot_pL1 ? pV : na, "--------- pVWAP   ", PREVIOUS_VWAP_COLOR, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
 
 pa = plot(plot_pL2 and showBand2 ? ps2up : na, title = "上期 · +2σ", color = bandColor2, style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window, editable = false)
 f_drawLabel(ll_offset, show_plabels and plot_pL2 and showBand2 ? ps2up : na , "     -------- pSD+2   ", bandColor2, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
