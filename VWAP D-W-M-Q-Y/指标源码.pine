@@ -86,7 +86,7 @@ fill_pbands = input.bool(true, "填充上期区间", group = "上期区间", dis
 off_mult = input.int(15, "标签偏移", group = "窗格标签", display = display.none)
 bandColor1 = input.color(color.new(#9c9c9c, 30), "±1σ", group = "标准差颜色", inline = "颜色", display = display.none)
 bandColor2 = input.color(color.new(#9c9c9c, 43), "±2σ", group = "标准差颜色", inline = "颜色", display = display.none)
-bandFill = input.color(color.new(#9c9c9c, 76), "背景", group = "标准差颜色", inline = "颜色", display = display.none)
+bandFill = input.color(color.new(#9c9c9c, 90), "背景", group = "标准差颜色", inline = "颜色", display = display.none)
 
 var DEFAULT_LABEL_SIZE      = size.small
 var DEFAULT_LABEL_STYLE     = label.style_none
