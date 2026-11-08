@@ -1,0 +1,175 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © YeH_btc
+
+// Rolling VWAP
+// Orignal Code by © TradingView
+// Modified & Added Code by InFinito 2022.07.24 - https://www.tradingview.com/script/8TdKPb9z-Aggregated-Rolling-VWAP/
+// Modified & Added Code by Edward 2025.05.20
+
+//@version=6
+indicator('Rolling VWAP', overlay = true, max_boxes_count = 500, max_labels_count = 20)
+
+import PineCoders/ConditionalAverages/1 as pc
+
+int MS_IN_DAY = 60 * 1000 * 60 * 24
+
+string GRP1 = '滚动 VWAP'
+bool enable7 = input.bool(true, '7D', group = GRP1, inline = '1', display = display.none)
+int pdaysInput7 = input.int(7, '', group = GRP1, inline = '1', options = [1, 3, 5, 7, 14, 21, 28, 30, 60, 90, 182, 365], display = display.none) * MS_IN_DAY
+color RVWAP1_Col = input.color(defval = color.new(#67d8ee, 0), title = '滚动 VWAP', group = GRP1, inline = '1', display = display.none)
+bool showBands7 = input.bool(true, '上下轨', group = GRP1, inline = '1', display = display.none)
+color RBands1_Col = input.color(defval = color.new(#67d8ee, 65), title = '', group = GRP1, inline = '1', display = display.none)
+color RVWAP1_Bgc = input.color(defval = color.new(#67d8ee, 94), title = '填充', group = GRP1, inline = '1', display = display.none)
+
+bool enable30 = input.bool(true, '30D', group = GRP1, inline = '2', display = display.none)
+int pdaysInput30 = input.int(30, '', group = GRP1, inline = '2', options = [1, 3, 5, 7, 14, 21, 28, 30, 60, 90, 182, 365], display = display.none) * MS_IN_DAY
+color RVWAP2_Col = input.color(defval = color.new(#f7b85c, 0), title = '滚动 VWAP', group = GRP1, inline = '2', display = display.none)
+color RBands2_Col = input.color(defval = color.new(#f7b85c, 65), title = '标准差带', group = GRP1, inline = '2', display = display.none)
+color RVWAP2_Bgc = input.color(defval = color.new(#f7b85c, 94), title = '填充', group = GRP1, inline = '2', display = display.none)
+
+bool enable90 = input.bool(true, '90D', group = GRP1, inline = '3', display = display.none)
+int pdaysInput90 = input.int(90, '', group = GRP1, inline = '3', options = [1, 3, 5, 7, 14, 21, 28, 30, 60, 90, 182, 365], display = display.none) * MS_IN_DAY
+color RVWAP3_Col = input.color(defval = color.new(#caa1ff, 0), title = '滚动 VWAP', group = GRP1, inline = '3', display = display.none)
+color RBands3_Col = input.color(defval = color.new(#caa1ff, 65), title = '标准差带', group = GRP1, inline = '3', display = display.none)
+color RVWAP3_Bgc = input.color(defval = color.new(#caa1ff, 94), title = '填充', group = GRP1, inline = '3', display = display.none)
+
+bool enable365 = input.bool(true, '365D', group = GRP1, inline = '4', display = display.none)
+int pdaysInput365 = input.int(365, '', group = GRP1, inline = '4', options = [1, 3, 5, 7, 14, 21, 28, 30, 60, 90, 182, 365], display = display.none) * MS_IN_DAY
+color RVWAP4_Col = input.color(defval = color.new(#87d8a0, 0), title = '滚动 VWAP', group = GRP1, inline = '4', display = display.none)
+color RBands4_Col = input.color(defval = color.new(#87d8a0, 65), title = '标准差带', group = GRP1, inline = '4', display = display.none)
+color RVWAP4_Bgc = input.color(defval = color.new(#87d8a0, 94), title = '填充', group = GRP1, inline = '4', display = display.none)
+
+string GRP2 = '滚动 VWAP 标准差带'
+bool aggr = input.bool(defval = true, title = '使用聚合数据', group = GRP2, inline ="1", display = display.none)
+string devMode = input.string(defval = '对称百分比', title = '偏差带模式', group = GRP2, inline = '2', options = ['对称百分比', '标准差'], display = display.none)
+float stdevMult = input.float(0.5, '倍数／百分比', group = GRP2, inline = '2', minval = 0.5, step = 0.5, display = display.none)
+i_sym1 = input.bool(true, '', inline='3', group=GRP2, display = display.none)
+i_sym2 = input.bool(true, '', inline='4', group=GRP2, display = display.none)
+i_sym3 = input.bool(false, '', inline='5', group=GRP2, display = display.none)
+i_sym4 = input.bool(false, '', inline='6', group=GRP2, display = display.none)
+
+i_sym1_ticker = input.symbol('BINANCE:BTCUSDT', '', inline='3', group=GRP2, display = display.none)
+i_sym2_ticker = input.symbol('COINBASE:BTCUSD', '', inline='4', group=GRP2, display = display.none)
+i_sym3_ticker = input.symbol('BYBIT:BTCUSDT', '', inline='5', group=GRP2, display = display.none)
+i_sym4_ticker = input.symbol('OKX:BTCUSDT', '', inline='6', group=GRP2, display = display.none)
+
+float Src = hlc3
+float finvol = 0
+
+// Function to request volume
+f_volume(_ticker) =>
+    request.security(_ticker, timeframe.period, volume)
+
+if aggr == true
+    v1 = (i_sym1 ? f_volume(i_sym1_ticker) : 0)
+    v2 = (i_sym2 ? f_volume(i_sym2_ticker) : 0)
+    v3 = (i_sym3 ? f_volume(i_sym3_ticker) : 0)
+    v4 = (i_sym4 ? f_volume(i_sym4_ticker) : 0)
+
+    finvol := v1+v2+v3+v4
+else
+    finvol := volume
+
+// Function to calculate rolling VWAP
+calculateRollingVWAP(int period) =>
+    float sumSrcVol = pc.totalForTimeWhen(Src * finvol, period, true)
+    float sumVol = pc.totalForTimeWhen(finvol, period, true)
+    float sumSrcSrcVol = pc.totalForTimeWhen(finvol * math.pow(Src, 2), period, true)
+    float rollingVWAP = sumSrcVol / sumVol
+    float variance = sumSrcSrcVol / sumVol - math.pow(rollingVWAP, 2)
+    variance := math.max(0, variance)
+    float stDev = math.sqrt(variance)
+    float upperBand = rollingVWAP + (devMode == '标准差' ? stdevMult : stdevMult / 100) * (devMode == '标准差' ? stDev : rollingVWAP)
+    float lowerBand = rollingVWAP - (devMode == '标准差' ? stdevMult : stdevMult / 100) * (devMode == '标准差' ? stDev : rollingVWAP)
+    [rollingVWAP, upperBand, lowerBand]
+
+// Calculating the rolling VWAP for each period
+[rollingVWAP7, upperBand7, lowerBand7] = calculateRollingVWAP(pdaysInput7)
+[rollingVWAP30, upperBand30, lowerBand30] = calculateRollingVWAP(pdaysInput30)
+[rollingVWAP90, upperBand90, lowerBand90] = calculateRollingVWAP(pdaysInput90)
+[rollingVWAP365, upperBand365, lowerBand365] = calculateRollingVWAP(pdaysInput365)
+
+// Plotting the VWAP and bands for each enabled period
+plot(enable7 ? rollingVWAP7 : na, '7 日滚动 VWAP', RVWAP1_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
+plot(enable30 ? rollingVWAP30 : na, '30 日滚动 VWAP', RVWAP2_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
+plot(enable90 ? rollingVWAP90 : na, '90 日滚动 VWAP', RVWAP3_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
+plot(enable365 ? rollingVWAP365 : na, '365 日滚动 VWAP', RVWAP4_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
+
+// Plot the bands for each enabled period
+p1_7 = plot(enable7 and showBands7 ? upperBand7 : na, color = RBands1_Col, title = '7 日滚动 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
+p2_7 = plot(enable7 and showBands7 ? lowerBand7 : na, color = RBands1_Col, title = '7 日滚动 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
+fill(p1_7, p2_7, RVWAP1_Bgc, title = '7 日滚动 VWAP · 背景')
+
+p1_30 = plot(enable30 ? upperBand30 : na, color = RBands2_Col, title = '30 日滚动 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
+p2_30 = plot(enable30 ? lowerBand30 : na, color = RBands2_Col, title = '30 日滚动 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
+fill(p1_30, p2_30, RVWAP2_Bgc, title = '30 日滚动 VWAP · 背景')
+
+p1_90 = plot(enable90 ? upperBand90 : na, color = RBands3_Col, title = '90 日滚动 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
+p2_90 = plot(enable90 ? lowerBand90 : na, color = RBands3_Col, title = '90 日滚动 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
+fill(p1_90, p2_90, RVWAP3_Bgc, title = '90 日滚动 VWAP · 背景')
+
+p1_365 = plot(enable365 ? upperBand365 : na, color = RBands4_Col, title = '365 日滚动 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
+p2_365 = plot(enable365 ? lowerBand365 : na, color = RBands4_Col, title = '365 日滚动 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
+fill(p1_365, p2_365, RVWAP4_Bgc, title = '365 日滚动 VWAP · 背景')
+
+// 各标签跟随对应滚动线的颜色，价格使用品种的最小变动单位。
+updateRollingLabel(bool enabled, int windowMs, float price, color shade) =>
+    var label tag = label.new(na, na, "", style = label.style_label_left, color = color.new(shade, 100), textcolor = shade, text_font_family = font.family_monospace)
+    if barstate.islast and enabled and not na(price)
+        label.set_xy(tag, bar_index + 1, price)
+        label.set_text(tag, str.tostring(windowMs / MS_IN_DAY) + "D " + str.tostring(price, format.mintick))
+
+updateRollingLabel(enable7, pdaysInput7, rollingVWAP7, RVWAP1_Col)
+updateRollingLabel(enable30, pdaysInput30, rollingVWAP30, RVWAP2_Col)
+updateRollingLabel(enable90, pdaysInput90, rollingVWAP90, RVWAP3_Col)
+updateRollingLabel(enable365, pdaysInput365, rollingVWAP365, RVWAP4_Col)
+
+// IB Range
+enable_ib = input.bool(true, '初始平衡区间', group = '初始平衡区间（IB）', inline = 'ib', display = display.none)
+DaysToShow = input.int(7, '显示天数', minval = 1, group = '初始平衡区间（IB）', inline = 'ib', display = display.none)
+ib_color = input.color(color.rgb(91, 156, 246), '', group = '初始平衡区间（IB）', inline = 'ib', display = display.none)
+var array<box> boxesArray = array.new<box>()
+var string Tokyo = '0900-1500'
+var string Tokyo_Range = '0900-1000'
+TokyoTZ = 'Asia/Tokyo'
+On_sesTokyo = math.sign(nz(time(timeframe.period, Tokyo, TokyoTZ)))
+On_rangeTokyo = math.sign(nz(time(timeframe.period, Tokyo_Range, TokyoTZ)))
+
+//High & Low Session Detector 
+LowHighSessionDetector(On_Range, On_Session, Color_Session) =>
+    var int Bar = 0
+    var float High = 0.0
+    var float Low = 0.0
+    var box BoX = na
+
+    if On_Range[1] == 0 and On_Range == 1
+        Bar := bar_index
+        High := high
+        Low := low
+        Low
+    else if On_Range[1] == 1 and On_Range == 1
+        High := math.max(high, High)
+        Low := math.min(low, Low)
+        Low
+    else if On_Session == 0
+        High := 0.0
+        Low := 0.0
+        Bar := 0
+        Bar
+
+    if On_Session > On_Session[1] and str.tonumber(timeframe.period) <= 60
+        BoX := box.new(bar_index, High, bar_index, Low, bgcolor = color.new(Color_Session, 85), border_color = color.new(Color_Session, 100))
+        array.push(boxesArray, BoX)
+
+        if array.size(boxesArray) > DaysToShow
+            box.delete(array.shift(boxesArray))
+    if On_Range[1] == 1 and On_Range == 1
+        box.set_top(BoX, High)
+        box.set_bottom(BoX, Low)
+    if On_Session[1] == 1 and On_Session == 1
+        box.set_right(BoX, bar_index)
+    if not timeframe.change('D')
+        box.set_right(BoX, bar_index)
+
+if enable_ib
+    LowHighSessionDetector(On_rangeTokyo, On_sesTokyo, ib_color)
