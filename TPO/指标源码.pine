@@ -2,7 +2,7 @@
 // © YeH_btc
 
 //@version=6
-indicator(title = 'TPO', shorttitle = 'TPO', overlay = true, max_polylines_count = 100, max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
+indicator(title = 'TPO', shorttitle = 'TPO', overlay = true, behind_chart = false, max_polylines_count = 100, max_lines_count = 500, max_labels_count = 500, max_boxes_count = 500)
 
 // ----------------------------------------------------------------------
 // 输入设置
@@ -19,11 +19,11 @@ extend_ib = input.bool(false, 'IB 延长线', inline = 'ib_ext', group = grp_ib,
 // IB 外观设置
 ib_color = input.color(color.new(#FFCC80, 0), '', inline = 'ib', group = grp_ib, display = display.none)
 ib_line_color = input.color(color.new(#FFCC80, 40), '', inline = 'ib_ext', group = grp_ib, display = display.none)
-ib_width = input.int(2, '粗细', minval = 1, inline = 'ib', group = grp_ib, display = display.none)
+ib_width = input.int(2, '', minval = 1, inline = 'ib', group = grp_ib, display = display.none)
 ib_ext_style_str = input.string('点线', '线型', options = ['实线', '虚线', '点线'], inline = 'ib_ext', group = grp_ib, display = display.none)
 
-grp_sp = '单印区间'
-show_singles = input.bool(true, '单印区间', inline = 'sp', group = grp_sp, display = display.none)
+grp_sp = 'Single Prints'
+show_singles = input.bool(true, 'Single Prints', inline = 'sp', group = grp_sp, display = display.none)
 extend_singles = input.bool(true, '延长', inline = 'sp', group = grp_sp, display = display.none)
 singles_color = input.color(color.new(#8040FF, 60), '', inline = 'sp', group = grp_sp, display = display.none)
 
@@ -35,7 +35,7 @@ profile_color = input.color(color.new(#808080, 80), '区外', inline='fill', gro
 show_poc = input.bool(true, 'POC', inline = 'poc', group = grp_style, display = display.none)
 poc_color = input.color(color.new(#39D600, 0), '', inline = 'poc', group = grp_style, display = display.none)
 poc_style_str = input.string('实线', '线型', options = ['实线', '虚线', '点线'], inline='poc', group = grp_style, display = display.none)
-poc_width = input.int(2, '粗细', minval=1, inline='poc', group=grp_style, display = display.none)
+poc_width = input.int(2, '', minval=1, inline='poc', group=grp_style, display = display.none)
 show_va_lines = input.bool(true, 'VAH / VAL', inline='va_edge', group = grp_style, display = display.none)
 va_color = input.color(color.new(#FF0000, 0), '', inline='va_edge', group = grp_style, display = display.none)
 va_style_str = input.string('虚线', '线型', options = ['实线', '虚线', '点线'], inline='va_edge', group = grp_style, display = display.none)
@@ -50,6 +50,7 @@ get_line_style(style_str) =>
         => line.style_dashed
 
 // 矩形管理
+var box[] active_sp_boxes = array.new<box>() // 已确认且尚未触碰的区间
 var box[] global_boxes = array.new<box>()       // 历史矩形
 var polyline[] all_profiles = array.new<polyline>()
 var polyline[] live_profiles = array.new<polyline>()
@@ -57,8 +58,11 @@ var box[] live_sp_boxes = array.new<box>()      // 实时矩形（下次更新�
 
 manage_box_limit(box new_box) =>
     array.push(global_boxes, new_box)
-    if array.size(global_boxes) > 480
+    if array.size(global_boxes) > 240
         box old_box = array.shift(global_boxes)
+        int active_idx = array.indexof(active_sp_boxes, old_box)
+        if active_idx >= 0
+            array.remove(active_sp_boxes, active_idx)
         box.delete(old_box)
 
 // ----------------------------------------------------------------------
@@ -172,6 +176,9 @@ draw_tpo_profile(float[] arr_h, float[] arr_l, int start_t, int end_t, bool is_l
                             array.push(live_sp_boxes, b)
                         else
                             manage_box_limit(b)
+                            if extend_singles
+                                box.set_extend(b, extend.right)
+                                array.push(active_sp_boxes, b)
                     run_start_idx := -1 
     
     // 直接给轮廓分段着色，价值区不会变成覆盖整段K线的矩形。
@@ -260,6 +267,19 @@ if new_period and array.size(period_highs) > 0
     // 新周期重置 IB
     current_ib_high := na
     current_ib_low := na
+
+// 已结束轮廓的 Single Prints 持续延伸，后续K线含影线首次触碰即冻结。
+// 在新轮廓生成之后检查，因此新周期第一根K线也能触发停止。
+if array.size(active_sp_boxes) > 0
+    for i = array.size(active_sp_boxes) - 1 to 0
+        box zone = array.get(active_sp_boxes, i)
+        bool touched = high >= box.get_bottom(zone) and low <= box.get_top(zone)
+        if touched
+            box.set_extend(zone, extend.none)
+            box.set_right(zone, time)
+            array.remove(active_sp_boxes, i)
+        else
+            box.set_right(zone, time)
 
 array.push(period_highs, high)
 array.push(period_lows, low)
