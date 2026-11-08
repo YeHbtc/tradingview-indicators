@@ -8,7 +8,7 @@ indicator(title = 'TPO', shorttitle = 'TPO', overlay = true, max_polylines_count
 // 输入设置
 // ----------------------------------------------------------------------
 grp_main = '基本设置'
-period_input = input.timeframe('D', '轮廓周期', options = ['D', 'W', 'M'], group = grp_main, display = display.none)
+period_input = input.timeframe('W', '轮廓周期', options = ['D', 'W', 'M'], group = grp_main, display = display.none)
 bars_nb = input.int(100, '价格分层数', minval = 10, maxval = 500, group = grp_main, display = display.none)
 width_percentage = input.float(30, '轮廓宽度（%）', minval = 10, maxval = 200, group = grp_main, display = display.none)
 va_percentage = input.float(70.0, '价值区域占比（%）', minval = 0, maxval = 100, group = grp_main, display = display.none)
@@ -17,27 +17,27 @@ grp_ib = '初始平衡区间（IB）'
 show_ib = input.bool(true, '初始平衡区间', group = grp_ib, display = display.none)
 extend_ib = input.bool(false, '延长 IB 线', group = grp_ib, display = display.none)
 // IB 外观设置
-ib_color = input.color(color.rgb(133, 227, 167), 'IB 颜色', group = grp_ib, display = display.none)
-ib_line_color = input.color(color.rgb(255, 255, 255, 30), 'IB 延长线颜色', group = grp_ib, display = display.none)
+ib_color = input.color(color.rgb(128, 128, 128), 'IB 颜色', group = grp_ib, display = display.none)
+ib_line_color = input.color(color.rgb(128, 128, 128, 30), 'IB 延长线颜色', group = grp_ib, display = display.none)
 ib_width = input.int(2, 'IB 粗细', minval = 1, group = grp_ib, display = display.none)
 ib_ext_style_str = input.string('点线', 'IB 延长线线型', options = ['实线', '虚线', '点线'], group = grp_ib, display = display.none)
 
 grp_sp = '单印区间'
 show_singles = input.bool(true, '单印区间', group = grp_sp, display = display.none)
 extend_singles = input.bool(true, '延长单印区间', group = grp_sp, display = display.none)
-singles_color = input.color(color.rgb(255, 255, 255, 90), '单印区间颜色', group = grp_sp, display = display.none)
+singles_color = input.color(color.new(#8040FF, 85), '单印区间颜色', group = grp_sp, display = display.none)
 
 grp_style = '轮廓样式'
 calc_va = input.bool(true, '计算价值区域', group = grp_style, display = display.none)
 show_poc = input.bool(true, 'POC 控制点线', group = grp_style, display = display.none)
 show_va_lines = input.bool(true, '价值区域边界线', group = grp_style, display = display.none)
 show_va_bg = input.bool(true, '价值区域填充', group = grp_style, display = display.none)
-profile_color = input.color(color.rgb(156, 156, 156, 70), '轮廓颜色', group = grp_style, display = display.none)
-poc_color = input.color(color.rgb(247, 82, 95, 30), 'POC 颜色', group = grp_style, display = display.none)
+profile_color = input.color(color.new(#808080, 30), '轮廓颜色', group = grp_style, display = display.none)
+poc_color = input.color(color.new(#39D600, 0), 'POC 颜色', group = grp_style, display = display.none)
 poc_width = input.int(2, 'POC 粗细', minval=1, group=grp_style, display = display.none)
 poc_style_str = input.string('实线', 'POC 线型', options = ['实线', '虚线', '点线'], group = grp_style, display = display.none)
-va_color = input.color(color.rgb(91, 156, 246, 30), '价值区域边界颜色', group = grp_style, display = display.none)
-va_bg_color = input.color(color.rgb(91, 156, 246, 95), '价值区域填充颜色', group = grp_style, display = display.none)
+va_color = input.color(color.new(#FF0000, 0), '价值区域边界颜色', group = grp_style, display = display.none)
+va_bg_color = input.color(color.new(#808080, 85), '价值区域填充颜色', group = grp_style, display = display.none)
 va_style_str = input.string('虚线', '价值区域线型', options = ['实线', '虚线', '点线'], group = grp_style, display = display.none)
 
 // ----------------------------------------------------------------------
