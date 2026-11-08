@@ -13,35 +13,35 @@ import PineCoders/ConditionalAverages/1 as pc
 
 int MS_IN_DAY = 60 * 1000 * 60 * 24
 
-string GRP1 = '滚动 VWAP'
+string GRP1 = 'VWAP'
 bool enable7 = input.bool(true, '7D', group = GRP1, inline = '1', display = display.none)
 int pdaysInput7 = input.int(7, '', group = GRP1, inline = '1', options = [1, 3, 5, 7, 14, 21, 28, 30, 60, 90, 182, 365], display = display.none) * MS_IN_DAY
-color RVWAP1_Col = input.color(defval = color.new(#67d8ee, 0), title = '滚动 VWAP', group = GRP1, inline = '1', display = display.none)
+color RVWAP1_Col = input.color(defval = color.new(#67d8ee, 0), title = '主线', group = GRP1, inline = '1', display = display.none)
 bool showBands7 = input.bool(true, '上下轨', group = GRP1, inline = '1', display = display.none)
-color RBands1_Col = input.color(defval = color.new(#67d8ee, 65), title = '', group = GRP1, inline = '1', display = display.none)
-color RVWAP1_Bgc = input.color(defval = color.new(#67d8ee, 94), title = '填充', group = GRP1, inline = '1', display = display.none)
+color RBands1_Col = input.color(defval = color.new(#67d8ee, 80), title = '', group = GRP1, inline = '1', display = display.none)
+color RVWAP1_Bgc = input.color(defval = color.new(#67d8ee, 97), title = '填充', group = GRP1, inline = '1', display = display.none)
 
 bool enable30 = input.bool(true, '30D', group = GRP1, inline = '2', display = display.none)
 int pdaysInput30 = input.int(30, '', group = GRP1, inline = '2', options = [1, 3, 5, 7, 14, 21, 28, 30, 60, 90, 182, 365], display = display.none) * MS_IN_DAY
-color RVWAP2_Col = input.color(defval = color.new(#f7b85c, 0), title = '滚动 VWAP', group = GRP1, inline = '2', display = display.none)
-color RBands2_Col = input.color(defval = color.new(#f7b85c, 65), title = '标准差带', group = GRP1, inline = '2', display = display.none)
-color RVWAP2_Bgc = input.color(defval = color.new(#f7b85c, 94), title = '填充', group = GRP1, inline = '2', display = display.none)
+color RVWAP2_Col = input.color(defval = color.new(#f7b85c, 0), title = '主线', group = GRP1, inline = '2', display = display.none)
+color RBands2_Col = input.color(defval = color.new(#f7b85c, 80), title = '上下轨', group = GRP1, inline = '2', display = display.none)
+color RVWAP2_Bgc = input.color(defval = color.new(#f7b85c, 97), title = '填充', group = GRP1, inline = '2', display = display.none)
 
 bool enable90 = input.bool(true, '90D', group = GRP1, inline = '3', display = display.none)
 int pdaysInput90 = input.int(90, '', group = GRP1, inline = '3', options = [1, 3, 5, 7, 14, 21, 28, 30, 60, 90, 182, 365], display = display.none) * MS_IN_DAY
-color RVWAP3_Col = input.color(defval = color.new(#caa1ff, 0), title = '滚动 VWAP', group = GRP1, inline = '3', display = display.none)
-color RBands3_Col = input.color(defval = color.new(#caa1ff, 65), title = '标准差带', group = GRP1, inline = '3', display = display.none)
-color RVWAP3_Bgc = input.color(defval = color.new(#caa1ff, 94), title = '填充', group = GRP1, inline = '3', display = display.none)
+color RVWAP3_Col = input.color(defval = color.new(#caa1ff, 0), title = '主线', group = GRP1, inline = '3', display = display.none)
+color RBands3_Col = input.color(defval = color.new(#caa1ff, 80), title = '上下轨', group = GRP1, inline = '3', display = display.none)
+color RVWAP3_Bgc = input.color(defval = color.new(#caa1ff, 97), title = '填充', group = GRP1, inline = '3', display = display.none)
 
 bool enable365 = input.bool(true, '365D', group = GRP1, inline = '4', display = display.none)
 int pdaysInput365 = input.int(365, '', group = GRP1, inline = '4', options = [1, 3, 5, 7, 14, 21, 28, 30, 60, 90, 182, 365], display = display.none) * MS_IN_DAY
-color RVWAP4_Col = input.color(defval = color.new(#87d8a0, 0), title = '滚动 VWAP', group = GRP1, inline = '4', display = display.none)
-color RBands4_Col = input.color(defval = color.new(#87d8a0, 65), title = '标准差带', group = GRP1, inline = '4', display = display.none)
-color RVWAP4_Bgc = input.color(defval = color.new(#87d8a0, 94), title = '填充', group = GRP1, inline = '4', display = display.none)
+color RVWAP4_Col = input.color(defval = color.new(#87d8a0, 0), title = '主线', group = GRP1, inline = '4', display = display.none)
+color RBands4_Col = input.color(defval = color.new(#87d8a0, 80), title = '上下轨', group = GRP1, inline = '4', display = display.none)
+color RVWAP4_Bgc = input.color(defval = color.new(#87d8a0, 97), title = '填充', group = GRP1, inline = '4', display = display.none)
 
-string GRP2 = '滚动 VWAP 标准差带'
-bool aggr = input.bool(defval = true, title = '使用聚合数据', group = GRP2, inline ="1", display = display.none)
-string devMode = input.string(defval = '对称百分比', title = '偏差带模式', group = GRP2, inline = '2', options = ['对称百分比', '标准差'], display = display.none)
+string GRP2 = '计算设置'
+bool aggr = input.bool(defval = true, title = '聚合数据', group = GRP2, inline ="1", display = display.none)
+string devMode = input.string(defval = '对称百分比', title = '偏差模式', group = GRP2, inline = '2', options = ['对称百分比', '标准差'], display = display.none)
 float stdevMult = input.float(0.5, '倍数／百分比', group = GRP2, inline = '2', minval = 0.5, step = 0.5, display = display.none)
 i_sym1 = input.bool(true, '', inline='3', group=GRP2, display = display.none)
 i_sym2 = input.bool(true, '', inline='4', group=GRP2, display = display.none)
@@ -90,27 +90,27 @@ calculateRollingVWAP(int period) =>
 [rollingVWAP365, upperBand365, lowerBand365] = calculateRollingVWAP(pdaysInput365)
 
 // Plotting the VWAP and bands for each enabled period
-plot(enable7 ? rollingVWAP7 : na, '7 日滚动 VWAP', RVWAP1_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
-plot(enable30 ? rollingVWAP30 : na, '30 日滚动 VWAP', RVWAP2_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
-plot(enable90 ? rollingVWAP90 : na, '90 日滚动 VWAP', RVWAP3_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
-plot(enable365 ? rollingVWAP365 : na, '365 日滚动 VWAP', RVWAP4_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
+plot(enable7 ? rollingVWAP7 : na, '7 日 VWAP', RVWAP1_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
+plot(enable30 ? rollingVWAP30 : na, '30 日 VWAP', RVWAP2_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
+plot(enable90 ? rollingVWAP90 : na, '90 日 VWAP', RVWAP3_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
+plot(enable365 ? rollingVWAP365 : na, '365 日 VWAP', RVWAP4_Col, linewidth = 1, display = display.pane + display.data_window, editable = false)
 
 // Plot the bands for each enabled period
-p1_7 = plot(enable7 and showBands7 ? upperBand7 : na, color = RBands1_Col, title = '7 日滚动 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
-p2_7 = plot(enable7 and showBands7 ? lowerBand7 : na, color = RBands1_Col, title = '7 日滚动 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
-fill(p1_7, p2_7, RVWAP1_Bgc, title = '7 日滚动 VWAP · 背景')
+p1_7 = plot(enable7 and showBands7 ? upperBand7 : na, color = RBands1_Col, title = '7 日 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
+p2_7 = plot(enable7 and showBands7 ? lowerBand7 : na, color = RBands1_Col, title = '7 日 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
+fill(p1_7, p2_7, RVWAP1_Bgc, title = '7 日 VWAP · 背景')
 
-p1_30 = plot(enable30 ? upperBand30 : na, color = RBands2_Col, title = '30 日滚动 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
-p2_30 = plot(enable30 ? lowerBand30 : na, color = RBands2_Col, title = '30 日滚动 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
-fill(p1_30, p2_30, RVWAP2_Bgc, title = '30 日滚动 VWAP · 背景')
+p1_30 = plot(enable30 ? upperBand30 : na, color = RBands2_Col, title = '30 日 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
+p2_30 = plot(enable30 ? lowerBand30 : na, color = RBands2_Col, title = '30 日 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
+fill(p1_30, p2_30, RVWAP2_Bgc, title = '30 日 VWAP · 背景')
 
-p1_90 = plot(enable90 ? upperBand90 : na, color = RBands3_Col, title = '90 日滚动 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
-p2_90 = plot(enable90 ? lowerBand90 : na, color = RBands3_Col, title = '90 日滚动 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
-fill(p1_90, p2_90, RVWAP3_Bgc, title = '90 日滚动 VWAP · 背景')
+p1_90 = plot(enable90 ? upperBand90 : na, color = RBands3_Col, title = '90 日 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
+p2_90 = plot(enable90 ? lowerBand90 : na, color = RBands3_Col, title = '90 日 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
+fill(p1_90, p2_90, RVWAP3_Bgc, title = '90 日 VWAP · 背景')
 
-p1_365 = plot(enable365 ? upperBand365 : na, color = RBands4_Col, title = '365 日滚动 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
-p2_365 = plot(enable365 ? lowerBand365 : na, color = RBands4_Col, title = '365 日滚动 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
-fill(p1_365, p2_365, RVWAP4_Bgc, title = '365 日滚动 VWAP · 背景')
+p1_365 = plot(enable365 ? upperBand365 : na, color = RBands4_Col, title = '365 日 VWAP · 上轨', display = display.pane + display.data_window, editable = false)
+p2_365 = plot(enable365 ? lowerBand365 : na, color = RBands4_Col, title = '365 日 VWAP · 下轨', display = display.pane + display.data_window, editable = false)
+fill(p1_365, p2_365, RVWAP4_Bgc, title = '365 日 VWAP · 背景')
 
 // 各标签跟随对应滚动线的颜色，价格使用品种的最小变动单位。
 updateRollingLabel(bool enabled, int windowMs, float price, color shade) =>
