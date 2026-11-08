@@ -67,6 +67,18 @@ float turnover24h = na
 if showConversion and syminfo.volumetype != "tick" and syminfo.currency != "" and syminfo.currency != "NONE"
     turnover24h := request.security(syminfo.tickerid, volumeTimeframe, rollingTurnover(syminfo.volumetype == "quote" ? volume : close * volume))
 
+formatTurnover(float amount) =>
+    if amount >= 999995000000
+        str.tostring(amount / 1e12, "0.##") + "T"
+    else if amount >= 999995000
+        str.tostring(amount / 1e9, "0.##") + "B"
+    else if amount >= 999995
+        str.tostring(amount / 1e6, "0.##") + "M"
+    else if amount >= 999.995
+        str.tostring(amount / 1e3, "0.##") + "K"
+    else
+        str.tostring(amount, "0.##")
+
 textAnchor = anchor(textVertical, textHorizontal)
 infoAnchor = anchor(infoVertical, infoHorizontal)
 sameAnchor = textAnchor == infoAnchor
@@ -85,9 +97,9 @@ if barstate.islast
         bool canConvert = currency != "" and currency != "NONE" and close > 0
         string conversionText = "换算不可用"
         if canConvert
-            conversionText := str.tostring(conversionAmount / close, "0.000")
-        string turnoverText = na(turnover24h) ? "暂无数据" : str.tostring(turnover24h, format.volume)
-        table.cell(textWatermark, 1, 3, conversionText + " | 24H " + turnoverText, text_color = color1, text_size = fontSize(textSize))
+            conversionText := str.tostring(conversionAmount / close, "0.##")
+        string turnoverText = na(turnover24h) ? "暂无数据" : formatTurnover(turnover24h)
+        table.cell(textWatermark, 1, 3, conversionText + " | " + turnoverText, text_color = color1, text_size = fontSize(textSize))
 
     int infoRow = sameAnchor ? 4 : 1
     if showSymbol
