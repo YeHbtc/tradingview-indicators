@@ -53,18 +53,19 @@ f_drawLabel(_x, _y, _text, _textcolor, _style, _size) =>
      )
 
     label.set_xy(_label, _x, _y)
+    label.set_text(_label, na(_y) ? "" : str.trim(_text) + " · " + str.tostring(_y, format.mintick))
 
 // ---------- VWAP selection ---------- //
 
 src = input.source(hlc3, "VWAP 价格来源", group = "VWAP 周期", display = display.none)
 
-plot_vD = input.bool(false, "显示日线 VWAP", group = "VWAP 周期", inline = "周期", display = display.none)
-plot_vW = input.bool(true, "显示周线 VWAP", group = "VWAP 周期", inline = "周期", display = display.none)
-plot_vM = input.bool(false, "显示月线 VWAP", group = "VWAP 周期", inline = "周期", display = display.none)
-plot_vQ = input.bool(false, "显示季线 VWAP", group = "VWAP 周期", inline = "周期", display = display.none)
-plot_vY = input.bool(false, "显示年线 VWAP", group = "VWAP 周期", inline = "周期", display = display.none)
+plot_vD = input.bool(false, "日线 VWAP", group = "VWAP 周期", display = display.none)
+plot_vW = input.bool(true, "周线 VWAP", group = "VWAP 周期", display = display.none)
+plot_vM = input.bool(false, "月线 VWAP", group = "VWAP 周期", display = display.none)
+plot_vQ = input.bool(false, "季线 VWAP", group = "VWAP 周期", display = display.none)
+plot_vY = input.bool(false, "年线 VWAP", group = "VWAP 周期", display = display.none)
 
-showStd = input.bool(true, "显示标准差", group = "本期标准差", display = display.none)
+showStd = input.bool(true, "标准差", group = "本期标准差", display = display.none)
 Std_selection = input.string("周线", "标准差周期", options = ["日线", "周线", "月线", "季线", "年线"], group = "本期标准差", display = display.none)
 
 showBand1 = input.bool(true, "±1σ", group = "本期标准差", inline = "标准差 1", display = display.none)
@@ -72,16 +73,20 @@ stDevMultiplier_1 = input.float(1.0, "标准差倍数 1", group = "本期标准�
 showBand2 = input.bool(false, "±2σ", group = "本期标准差", inline = "标准差 2", display = display.none)
 stDevMultiplier_2 = input.float(2.0, "标准差倍数 2", group = "本期标准差", inline = "标准差 2", display = display.none)
 
-show_labels = input.bool(false, "显示本期标签", group = "窗格标签", display = display.none)
+show_labels = input.bool(false, "本期标签", group = "窗格标签", display = display.none)
 fill_bands = input.bool(true, "填充本期区间", group = "本期标准差", display = display.none)
 
-plot_pL1 = input.bool(true, "显示上期 VWAP 和 ±1", group = "上期区间", display = display.none)
-plot_pL2 = input.bool(true, "显示上期 ±2", group = "上期区间", display = display.none)
+plot_pL1 = input.bool(true, "上期 VWAP 和 ±1", group = "上期区间", display = display.none)
+plot_pL2 = input.bool(true, "上期 ±2", group = "上期区间", display = display.none)
 
-show_plabels = input.bool(false, "显示上期标签", group = "窗格标签", display = display.none)
+show_plabels = input.bool(false, "上期标签", group = "窗格标签", display = display.none)
 fill_pbands = input.bool(true, "填充上期区间", group = "上期区间", display = display.none)
 
 off_mult = input.int(15, "标签偏移", group = "窗格标签", display = display.none)
+bandColor1 = input.color(color.new(#9c9c9c, 56), "±1σ", group = "标准差颜色", inline = "颜色", display = display.none)
+bandColor2 = input.color(color.new(#9c9c9c, 68), "±2σ", group = "标准差颜色", inline = "颜色", display = display.none)
+bandFill = input.color(color.new(#9c9c9c, 76), "背景", group = "标准差颜色", inline = "颜色", display = display.none)
+
 var DEFAULT_LABEL_SIZE      = size.small
 var DEFAULT_LABEL_STYLE     = label.style_none
 ll_offset = timenow + math.round(ta.change(time)*off_mult)
@@ -149,22 +154,21 @@ prev_period = Std_selection == "日线" ? newSessionD :
 
 [s2up, s1up, s1dn, s2dn] = compute_stDEV(vwap_sel, stdev_sel, stDevMultiplier_1, stDevMultiplier_2)
 
-a = plot(showStd and showBand2 ? s2up : na, title = "本期 · +2σ", color = color.new(color.gray, 70), style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window)
-f_drawLabel(ll_offset, show_labels and showStd and showBand2 ? s2up : na , "     -------- SD+2   ", color.gray, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
+a = plot(showStd and showBand2 ? s2up : na, title = "本期 · +2σ", color = bandColor2, style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window, editable = false)
+f_drawLabel(ll_offset, show_labels and showStd and showBand2 ? s2up : na , "     -------- SD+2   ", bandColor2, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
 
-b = plot(showStd and showBand1 ? s1up : na, title = "本期 · +1σ", color = color.new(color.gray, 60), style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window)
-f_drawLabel(ll_offset, show_labels and showStd and showBand1 ? s1up : na , "     -------- SD+1   ", color.gray, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
+b = plot(showStd and showBand1 ? s1up : na, title = "本期 · +1σ", color = bandColor1, style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window, editable = false)
+f_drawLabel(ll_offset, show_labels and showStd and showBand1 ? s1up : na , "     -------- SD+1   ", bandColor1, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
 
-c = plot(showStd and showBand1 ? s1dn : na, title = "本期 · −1σ", color = color.new(color.gray, 60), style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window)
-f_drawLabel(ll_offset, show_labels and showStd and showBand1 ? s1dn : na , "     -------- SD-1   ", color.gray, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
+c = plot(showStd and showBand1 ? s1dn : na, title = "本期 · −1σ", color = bandColor1, style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window, editable = false)
+f_drawLabel(ll_offset, show_labels and showStd and showBand1 ? s1dn : na , "     -------- SD-1   ", bandColor1, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
 
-d = plot(showStd and showBand2 ? s2dn : na, title = "本期 · −2σ", color = color.new(color.gray, 70), style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window)
-f_drawLabel(ll_offset, show_labels and showStd and showBand2 ? s2dn : na , "     -------- SD-2   ", color.gray, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
+d = plot(showStd and showBand2 ? s2dn : na, title = "本期 · −2σ", color = bandColor2, style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window, editable = false)
+f_drawLabel(ll_offset, show_labels and showStd and showBand2 ? s2dn : na , "     -------- SD-2   ", bandColor2, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
 
-const color BAND_FILL = color.new(#606060, 84)
 currentUpper = plot(showStd ? (showBand2 ? s2up : showBand1 ? s1up : na) : na, display = display.none, editable = false)
 currentLower = plot(showStd ? (showBand2 ? s2dn : showBand1 ? s1dn : na) : na, display = display.none, editable = false)
-fill(currentUpper, currentLower, fill_bands ? BAND_FILL : na, title = "本期 · 标准差背景", fillgaps = false)
+fill(currentUpper, currentLower, fill_bands ? bandFill : na, title = "本期 · 标准差背景", fillgaps = false, editable = false)
 
 // ---------- Previous period levels ---------- //
 
@@ -189,18 +193,18 @@ previouslevels(period, VWAP, s2up, s1up, s1dn, s2dn) =>
 pVplot = plot(plot_pL1 ? pV : na, title = "上期 · VWAP", color = color.new(VWAP_RED, 60), style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window)
 f_drawLabel(ll_offset, show_plabels and plot_pL1 ? pV : na, "--------- pVWAP   ", VWAP_RED, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
 
-pa = plot(plot_pL2 and showBand2 ? ps2up : na, title = "上期 · +2σ", color = color.new(color.gray, 70), style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window)
-f_drawLabel(ll_offset, show_plabels and plot_pL2 and showBand2 ? ps2up : na , "     -------- pSD+2   ", color.gray, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
+pa = plot(plot_pL2 and showBand2 ? ps2up : na, title = "上期 · +2σ", color = bandColor2, style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window, editable = false)
+f_drawLabel(ll_offset, show_plabels and plot_pL2 and showBand2 ? ps2up : na , "     -------- pSD+2   ", bandColor2, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
 
-pb = plot(plot_pL1 and showBand1 ? ps1up : na, title = "上期 · +1σ", color = color.new(color.gray, 60), style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window)
-f_drawLabel(ll_offset, show_plabels and plot_pL1 and showBand1 ? ps1up : na , "     -------- pSD+1   ", color.gray, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
+pb = plot(plot_pL1 and showBand1 ? ps1up : na, title = "上期 · +1σ", color = bandColor1, style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window, editable = false)
+f_drawLabel(ll_offset, show_plabels and plot_pL1 and showBand1 ? ps1up : na , "     -------- pSD+1   ", bandColor1, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
 
-pc = plot(plot_pL1 and showBand1 ? ps1dn : na, title = "上期 · −1σ", color = color.new(color.gray, 60), style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window)
-f_drawLabel(ll_offset, show_plabels and plot_pL1 and showBand1 ? ps1dn : na , "     -------- pSD-1   ", color.gray, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
+pc = plot(plot_pL1 and showBand1 ? ps1dn : na, title = "上期 · −1σ", color = bandColor1, style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window, editable = false)
+f_drawLabel(ll_offset, show_plabels and plot_pL1 and showBand1 ? ps1dn : na , "     -------- pSD-1   ", bandColor1, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
 
-pd = plot(plot_pL2 and showBand2 ? ps2dn : na, title = "上期 · −2σ", color = color.new(color.gray, 70), style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window)
-f_drawLabel(ll_offset, show_plabels and plot_pL2 and showBand2 ? ps2dn : na , "     -------- pSD-2   ", color.gray, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
+pd = plot(plot_pL2 and showBand2 ? ps2dn : na, title = "上期 · −2σ", color = bandColor2, style = plot.style_linebr, linewidth = 1, display = display.pane + display.data_window, editable = false)
+f_drawLabel(ll_offset, show_plabels and plot_pL2 and showBand2 ? ps2dn : na , "     -------- pSD-2   ", bandColor2, DEFAULT_LABEL_STYLE, DEFAULT_LABEL_SIZE)
 
 previousUpper = plot(plot_pL2 and showBand2 ? ps2up : plot_pL1 and showBand1 ? ps1up : na, display = display.none, editable = false)
 previousLower = plot(plot_pL2 and showBand2 ? ps2dn : plot_pL1 and showBand1 ? ps1dn : na, display = display.none, editable = false)
-fill(previousUpper, previousLower, fill_pbands ? BAND_FILL : na, title = "上期 · 标准差背景", fillgaps = false)
+fill(previousUpper, previousLower, fill_pbands ? bandFill : na, title = "上期 · 标准差背景", fillgaps = false, editable = false)
