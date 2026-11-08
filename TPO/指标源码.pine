@@ -14,7 +14,7 @@ width_percentage = input.float(30, '轮廓宽度（%）', minval = 10, maxval = 
 va_percentage = input.float(70.0, '价值区域占比（%）', minval = 0, maxval = 100, group = grp_main, display = display.none)
 
 grp_ib = '初始平衡区间（IB）'
-show_ib = input.bool(true, '初始平衡区间', group = grp_ib, display = display.none)
+show_ib = input.bool(true, '初始平衡区间', tooltip='每个轮廓开始后的前两个30分钟时间块，共1小时。', group = grp_ib, display = display.none)
 extend_ib = input.bool(false, '延长 IB 线', group = grp_ib, display = display.none)
 // IB 外观设置
 ib_color = input.color(color.rgb(128, 128, 128), 'IB 颜色', group = grp_ib, display = display.none)
@@ -31,13 +31,13 @@ grp_style = '轮廓样式'
 calc_va = input.bool(true, '计算价值区域', group = grp_style, display = display.none)
 show_poc = input.bool(true, 'POC 控制点线', group = grp_style, display = display.none)
 show_va_lines = input.bool(true, '价值区域边界线', group = grp_style, display = display.none)
-show_va_bg = input.bool(true, '价值区域填充', group = grp_style, display = display.none)
-profile_color = input.color(color.new(#808080, 30), '轮廓颜色', group = grp_style, display = display.none)
+show_va_bg = input.bool(true, '价值区高亮', group = grp_style, display = display.none)
+profile_color = input.color(color.new(#808080, 30), '价值区外轮廓颜色', group = grp_style, display = display.none)
 poc_color = input.color(color.new(#39D600, 0), 'POC 颜色', group = grp_style, display = display.none)
 poc_width = input.int(2, 'POC 粗细', minval=1, group=grp_style, display = display.none)
 poc_style_str = input.string('实线', 'POC 线型', options = ['实线', '虚线', '点线'], group = grp_style, display = display.none)
 va_color = input.color(color.new(#FF0000, 0), '价值区域边界颜色', group = grp_style, display = display.none)
-va_bg_color = input.color(color.new(#808080, 85), '价值区域填充颜色', group = grp_style, display = display.none)
+va_bg_color = input.color(color.new(#808080, 0), '价值区轮廓颜色', group = grp_style, display = display.none)
 va_style_str = input.string('虚线', '价值区域线型', options = ['实线', '虚线', '点线'], group = grp_style, display = display.none)
 
 // ----------------------------------------------------------------------
@@ -51,6 +51,8 @@ get_line_style(style_str) =>
 
 // 矩形管理
 var box[] global_boxes = array.new<box>()       // 历史矩形
+var polyline[] all_profiles = array.new<polyline>()
+var polyline[] live_profiles = array.new<polyline>()
 var box[] live_sp_boxes = array.new<box>()      // 实时矩形（下次更新时删除）
 
 manage_box_limit(box new_box) =>
@@ -77,8 +79,6 @@ bool new_period = timeframe.change(period_input)
 // ----------------------------------------------------------------------
 draw_tpo_profile(float[] arr_h, float[] arr_l, int start_t, int end_t, bool is_live) =>
     int len = array.size(arr_h)
-    if len < 2
-        [na, na, na, na]
 
     float h_range = array.max(arr_h)
     float l_range = array.min(arr_l)
@@ -166,7 +166,7 @@ draw_tpo_profile(float[] arr_h, float[] arr_l, int start_t, int end_t, bool is_l
                         float b_top = h_range - (run_start_idx * box_height)
                         float b_bot = h_range - (i * box_height)
                         
-                        box b = box.new(start_t, b_top, box_right_time, b_bot, xloc = xloc.bar_time, border_width = 0, bgcolor = singles_color)
+                        box b = box.new(start_t + sp_width_time, b_top, box_right_time, b_bot, xloc = xloc.bar_time, border_width = 0, bgcolor = singles_color)
                         
                         if is_live
                             array.push(live_sp_boxes, b)
@@ -174,24 +174,52 @@ draw_tpo_profile(float[] arr_h, float[] arr_l, int start_t, int end_t, bool is_l
                             manage_box_limit(b)
                     run_start_idx := -1 
     
-    var chart.point[] points = array.new<chart.point>()
-    array.clear(points)
-    array.push(points, chart.point.from_time(start_t, h_range))
-    int max_live_width = 0
-    if is_live
-        max_live_width := int(time + timeframe.in_seconds() * 10000 - start_t)
-    current_h := h_range
+    // 直接给轮廓分段着色，价值区不会变成覆盖整段K线的矩形。
+    // 单印段使用自己的紫色，不再被上层灰色轮廓遮挡。
+    chart.point[] points = array.new<chart.point>()
+    color run_color = na
     for i = 0 to bars_nb - 1
-        int sc = array.get(row_scores, i)
-        int bar_width_time = math.round(sc * time_per_score)
+        float top = h_range - i * box_height
+        float bottom = top - box_height
+        bool in_va = calc_va and show_va_bg and top <= vah_price + box_height * 0.001 and bottom >= val_price - box_height * 0.001
+        bool single = show_singles and array.get(row_scores, i) == 1
+        // 只有中间的单印段着色，排除轮廓两端尾部。
+        bool above_multi = false
+        bool below_multi = false
+        if single
+            if i > 0
+                for j = 0 to i - 1
+                    above_multi := above_multi or array.get(row_scores, j) > 1
+            if i < bars_nb - 1
+                for j = i + 1 to bars_nb - 1
+                    below_multi := below_multi or array.get(row_scores, j) > 1
+        color tint = single and above_multi and below_multi ? singles_color : in_va ? va_bg_color : profile_color
+        if points.size() > 0 and (tint != run_color or array.get(row_scores, i) == 0)
+            points.push(chart.point.from_time(start_t, top))
+            polyline segment = polyline.new(points, closed=true, xloc=xloc.bar_time, line_color=run_color, fill_color=run_color)
+            all_profiles.push(segment)
+            if all_profiles.size() > 90
+                polyline.delete(all_profiles.shift())
+            if is_live
+                live_profiles.push(segment)
+            points := array.new<chart.point>()
+        if array.get(row_scores, i) == 0
+            continue
+        if points.size() == 0
+            points.push(chart.point.from_time(start_t, top))
+            run_color := tint
+        int right = start_t + int(math.round(array.get(row_scores, i) * time_per_score))
+        points.push(chart.point.from_time(right, top))
+        points.push(chart.point.from_time(right, bottom))
+    if points.size() > 0
+        points.push(chart.point.from_time(start_t, points.last().price))
+        polyline segment = polyline.new(points, closed=true, xloc=xloc.bar_time, line_color=run_color, fill_color=run_color)
+        all_profiles.push(segment)
+        if all_profiles.size() > 90
+            polyline.delete(all_profiles.shift())
         if is_live
-            bar_width_time := math.min(bar_width_time, max_live_width)
-        array.push(points, chart.point.from_time(start_t + bar_width_time, current_h))
-        array.push(points, chart.point.from_time(start_t + bar_width_time, current_h - box_height))
-        current_h := current_h - box_height
-    array.push(points, chart.point.from_time(start_t, l_range))
-    
-    [points, poc_price, vah_price, val_price]
+            live_profiles.push(segment)
+    [poc_price, vah_price, val_price]
 
 draw_ib_lines(int start_t, int end_t, float ib_h, float ib_l) =>
     line[] lines = array.new<line>()
@@ -213,19 +241,15 @@ if bar_index == 0
     current_ib_high := na
     current_ib_low := na
 
-if new_period
+if new_period and array.size(period_highs) > 0
     int prev_period_end = time 
-    [pts, poc, vah, val] = draw_tpo_profile(period_highs, period_lows, period_start_time, prev_period_end, false)
-    if array.size(pts) > 0
-        polyline.new(pts, curved = false, closed = true, xloc = xloc.bar_time, line_color = profile_color, fill_color = profile_color)
+    [poc, vah, val] = draw_tpo_profile(period_highs, period_lows, period_start_time, prev_period_end, false)
     if show_poc and not na(poc)
         line.new(period_start_time, poc, prev_period_end, poc, xloc = xloc.bar_time, color = poc_color, width = poc_width, style = get_line_style(poc_style_str))
     if (show_va_lines or show_va_bg) and not na(vah) and not na(val)
         color line_col = show_va_lines ? va_color : na
         line l_vah = line.new(period_start_time, vah, prev_period_end, vah, xloc = xloc.bar_time, color = line_col, style = get_line_style(va_style_str))
         line l_val = line.new(period_start_time, val, prev_period_end, val, xloc = xloc.bar_time, color = line_col, style = get_line_style(va_style_str))
-        if show_va_bg
-            linefill.new(l_vah, l_val, va_bg_color)
     if show_ib
         draw_ib_lines(period_start_time, prev_period_end, current_ib_high, current_ib_low)
     
@@ -241,29 +265,43 @@ array.push(period_highs, high)
 array.push(period_lows, low)
 
 // ----------------------
-// IB 计算（使用时段与时区）
-// ----------------------
-// 当前 K 线位于指定时段内时返回有效时间
-bool is_ib_active = not na(time(timeframe.period, '0900-1000', 'Asia/Tokyo'))
+// IB：轮廓开始后的前两个30分钟时间块，合计1小时。
+// 大于30分钟的图表通过30分钟数据取得区间，避免计入整根大周期K线。
+ib_from_30m() =>
+    var float ih = na
+    var float il = na
+    int ps = time(period_input)
+    if timeframe.change(period_input)
+        ih := na
+        il := na
+    if time >= ps and time < ps + 60 * 60 * 1000
+        ih := na(ih) ? high : math.max(ih, high)
+        il := na(il) ? low : math.min(il, low)
+    [ps, ih, il]
 
-if is_ib_active
-    if na(current_ib_high) // 本周期 IB 时段的第一根 K 线
-        current_ib_high := high
-        current_ib_low := low
-    else
-        current_ib_high := math.max(current_ib_high, high)
-        current_ib_low := math.min(current_ib_low, low)
+[ib_period, ib_high_30, ib_low_30] = request.security(syminfo.tickerid, "30", ib_from_30m(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+if timeframe.in_seconds() <= 1800
+    bool in_first_hour = time >= time(period_input) and time < time(period_input) + 60 * 60 * 1000
+    if in_first_hour
+        current_ib_high := na(current_ib_high) ? high : math.max(current_ib_high, high)
+        current_ib_low := na(current_ib_low) ? low : math.min(current_ib_low, low)
+else if ib_period == time(period_input)
+    current_ib_high := ib_high_30
+    current_ib_low := ib_low_30
 
 // 实时更新
-var polyline current_poly = na
 var line current_poc_line = na
 var line current_vah_line = na
 var line current_val_line = na
 var line[] current_ib_lines = array.new<line>()
 
 if barstate.islast
-    if not na(current_poly)
-        polyline.delete(current_poly)
+    for segment in live_profiles
+        polyline.delete(segment)
+        int idx = all_profiles.indexof(segment)
+        if idx >= 0
+            all_profiles.remove(idx)
+    live_profiles.clear()
     if not na(current_poc_line)
         line.delete(current_poc_line)
     if not na(current_vah_line)
@@ -279,18 +317,14 @@ if barstate.islast
             box.delete(b)
         array.clear(live_sp_boxes)
 
-    [pts, poc, vah, val] = draw_tpo_profile(period_highs, period_lows, period_start_time, time, true)
+    [poc, vah, val] = draw_tpo_profile(period_highs, period_lows, period_start_time, time, true)
     
-    if array.size(pts) > 0
-        current_poly := polyline.new(pts, curved = false, closed = true, xloc = xloc.bar_time, line_color = profile_color, fill_color = profile_color)
     if show_poc and not na(poc)
         current_poc_line := line.new(period_start_time, poc, time + timeframe.in_seconds(timeframe.period)*1000, poc, xloc = xloc.bar_time, color = poc_color, width = poc_width, style = get_line_style(poc_style_str))
     if (show_va_lines or show_va_bg) and not na(vah) and not na(val)
         color line_col = show_va_lines ? va_color : na
         current_vah_line := line.new(period_start_time, vah, time, vah, xloc = xloc.bar_time, color = line_col, style = get_line_style(va_style_str))
         current_val_line := line.new(period_start_time, val, time, val, xloc = xloc.bar_time, color = line_col, style = get_line_style(va_style_str))
-        if show_va_bg
-            linefill.new(current_vah_line, current_val_line, va_bg_color)
     if show_ib
         int proj_end = time + timeframe.in_seconds(timeframe.period)*1000
         current_ib_lines := draw_ib_lines(period_start_time, proj_end, current_ib_high, current_ib_low)
