@@ -1,0 +1,73 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © YeH_btc
+//@version=6
+indicator("Telegram警报", precision=2, max_bars_back=1500)
+
+// 独立实现：不依赖外部库。只在标准5分钟USDT加密图表触发。
+length = input.int(20, "均值长度", minval=1, maxval=1000, group="触发条件", display=display.none)
+rangeMultiple = input.float(3, "振幅倍数", minval=0.1, step=0.1, group="触发条件", display=display.none)
+volumeMultiple = input.float(3, "成交量倍数", minval=0.1, step=0.1, group="触发条件", display=display.none)
+turnoverLimit = input.float(1, "24h成交额大于（亿USDT）", minval=0, step=0.1, group="触发条件", display=display.none)
+floorEnabled = input.bool(false, "最低振幅", inline="floor", group="触发条件", display=display.none)
+rangeFloor = input.float(0.5, "%", minval=0, step=0.1, inline="floor", group="触发条件", display=display.none)
+timing = input.string("即时", "触发方式", options=["即时", "收盘确认"], group="推送", display=display.none)
+quietMinutes = input.int(0, "冷却分钟（0关闭）", minval=0, group="推送", display=display.none)
+showMove = input.bool(true, "当前涨跌幅", group="图形", display=display.none)
+showDay = input.bool(false, "24h涨跌幅", group="图形", display=display.none)
+
+// 仅在连续完整的一分钟数据上使用1440分钟窗口；不把未知成交量当成基础币。
+minuteMetrics() =>
+    bool baseUnits = syminfo.volumetype == "base"
+    bool quoteUnits = syminfo.volumetype == "quote"
+    float amount = quoteUnits ? volume : baseUnits ? volume * hlc3 : na
+    float total = math.sum(amount, 1440)
+    float missing = math.sum(na(amount) or amount < 0 ? 1.0 : 0.0, 1441)
+    bool covered = not na(time[1440]) and time - time[1440] == 86400000 and missing == 0
+    [total, close[1440], covered]
+[dayAmount, oldPrice, dayReady] = request.security(syminfo.tickerid, "1", minuteMetrics(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+ratio(float numerator, float denominator) =>
+    denominator > 0 and not na(numerator) ? numerator / denominator : na
+
+float rangePct = ratio(high - low, low) * 100
+float meanRange = ta.sma(rangePct, length)[1]
+float meanVolume = ta.sma(volume, length)[1]
+float rangeFactor = ratio(rangePct, meanRange)
+float volumeFactor = ratio(volume, meanVolume)
+float movePct = ratio(close - open, open) * 100
+float dayPct = ratio(close - oldPrice, oldPrice) * 100
+bool chartOK = chart.is_standard and timeframe.isminutes and timeframe.multiplier == 5
+bool marketOK = syminfo.type == "crypto" and syminfo.currency == "USDT"
+bool unitsOK = syminfo.volumetype == "base" or syminfo.volumetype == "quote"
+bool dataOK = dayReady and not na(rangeFactor) and not na(volumeFactor) and not na(dayPct) and not na(dayAmount)
+bool qualifies = chartOK and marketOK and unitsOK and dataOK and rangeFactor > rangeMultiple and volumeFactor > volumeMultiple and dayAmount > turnoverLimit * 100000000 and (not floorEnabled or rangePct >= rangeFloor)
+
+// 同K线锁存与冷却均跨实时更新保留，历史计算不消耗实时冷却。
+varip bool firedThisBar = false
+varip int previousFire = na
+if barstate.isnew
+    firedThisBar := false
+bool cooling = not na(previousFire) and timenow - previousFire < quietMinutes * 60000
+bool fire = barstate.isrealtime and qualifies and not firedThisBar and not cooling and (timing == "即时" or barstate.isconfirmed)
+if fire
+    firedThisBar := true
+    previousFire := timenow
+
+plot(rangePct, "振幅", color.red, linewidth=2, format=format.percent, display=display.pane)
+plot(meanRange, "平均振幅", color.blue, format=format.percent, display=display.pane)
+plot(showMove ? movePct : na, "当前涨跌幅曲线", color.green, format=format.percent, display=display.pane)
+plot(showDay ? dayPct : na, "24h涨跌幅曲线", color.yellow, format=format.percent, display=display.pane)
+plot(math.round(movePct, 2), "消息涨跌幅", display=display.none)
+plot(math.round(dayPct, 2), "消息24h涨跌幅", display=display.none)
+plot(math.round(rangePct, 2), "消息振幅", display=display.none)
+plot(math.round(meanRange, 2), "消息平均振幅", display=display.none)
+plot(math.round(rangeFactor, 2), "消息振幅倍数", display=display.none)
+plot(math.round(volumeFactor, 2), "消息成交量倍数", display=display.none)
+plot(math.round(dayAmount / 100000000, 2), "消息成交额亿", display=display.none)
+bgcolor((barstate.isrealtime ? firedThisBar : qualifies) ? color.new(#3d85c6, 70) : na, title="条件满足")
+alertcondition(fire, "波动警报", "5分钟放量波动：{{exchange}}:{{ticker}}，价格{{close}}")
+
+var table notice = table.new(position.top_right, 1, 1)
+if barstate.islast
+    string message = not chartOK ? "暂停：请使用标准5分钟K线" : not marketOK ? "暂停：仅支持USDT加密交易对" : not unitsOK ? "暂停：成交量单位未知" : not dayReady ? "暂停：一分钟历史不足24小时或有缺失" : not dataOK ? "暂停：均值不足或数据无效" : "5分钟 · " + timing + " · 已就绪"
+    table.cell(notice, 0, 0, message, text_color=chartOK and marketOK and unitsOK and dataOK ? color.lime : color.orange, text_size=size.small)
