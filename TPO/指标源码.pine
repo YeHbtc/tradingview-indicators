@@ -27,7 +27,7 @@ show_singles = input.bool(true, 'Single Prints', inline = 'sp', group = grp_sp, 
 extend_singles = input.bool(true, '延长', inline = 'sp', group = grp_sp, display = display.none)
 singles_color = input.color(color.new(#8040FF, 60), '', inline = 'sp', group = grp_sp, display = display.none)
 
-sp_visible_only = input.bool(true, '仅显示可见范围', group = grp_sp, display = display.none)
+sp_visible_only = input.bool(false, '仅显示可见范围', group = grp_sp, display = display.none)
 
 grp_style = '轮廓样式'
 calc_va = input.bool(true, '计算价值区域', group = grp_style, display = display.none)
