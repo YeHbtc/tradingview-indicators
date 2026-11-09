@@ -12,7 +12,6 @@
 | [Rolling VWAP](Rolling%20VWAP/) | 四组滚动 VWAP，价格标签跟随线色，四组共用上下轨和填充开关。 |
 | [MA+ema](MA%2Bema/) | SMA、EMA 两组各四条均线，独立开关及线型粗细设置，首尾均线显示涨跌幅标签。 |
 | [TPO](TPO/) | 基于提供源码的中文市场轮廓，默认周级别；价值区分区着色、紫色单印区间，IB 统计轮廓首小时。 |
-
 | [Telegram警报](Telegram%E8%AD%A6%E6%8A%A5/) | 5分钟USDT加密货币放量波动警报，默认24h成交额大于1亿USDT，附Telegram消息JSON。 |
 
 仓库中的指标默认在状态行隐藏输入值。
